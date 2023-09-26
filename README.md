@@ -10,12 +10,14 @@ public class PaginationUtil {
         private int currentPage;
         private int totalPages;
         private int totalItems;
+        private int pageSize;
 
-        public Page(List<T> data, int currentPage, int totalPages, int totalItems) {
+        public Page(List<T> data, int currentPage, int totalPages, int totalItems, int pageSize) {
             this.data = data;
             this.currentPage = currentPage;
             this.totalPages = totalPages;
             this.totalItems = totalItems;
+            this.pageSize = pageSize;
         }
 
         public List<T> getData() {
@@ -33,6 +35,10 @@ public class PaginationUtil {
         public int getTotalItems() {
             return totalItems;
         }
+
+        public int getPageSize() {
+            return pageSize;
+        }
     }
 
     public static <T> Page<T> paginate(List<T> list, int pageNumber, int pageSize) {
@@ -47,12 +53,12 @@ public class PaginationUtil {
         int toIndex = Math.min(fromIndex + pageSize, totalItems);
 
         if (fromIndex >= totalItems) {
-            return new Page<>(List.of(), pageNumber, totalPages, totalItems);
+            return new Page<>(List.of(), pageNumber, totalPages, totalItems, pageSize);
         }
 
         List<T> pageData = list.subList(fromIndex, toIndex);
 
-        return new Page<>(pageData, pageNumber, totalPages, totalItems);
+        return new Page<>(pageData, pageNumber, totalPages, totalItems, pageSize);
     }
 
     public static int getTotalPages(List<?> list, int pageSize) {
