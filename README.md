@@ -1,68 +1,74 @@
-import org.springframework.stereotype.Component;
+<dependencies>
+    <!-- Spring Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
 
-import java.util.List;
+    <!-- Apache HttpClient -->
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+    </dependency>
 
-@Component
-public class PaginationUtil {
+    <!-- Spring Security -->
+    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-web</artifactId>
+    </dependency>
 
-    public static class Page<T> {
-        private List<T> data;
-        private int currentPage;
-        private int totalPages;
-        private int totalItems;
-        private int pageSize;
+    <!-- Spring Security Config -->
+    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-config</artifactId>
+    </dependency>
+</dependencies>
 
-        public Page(List<T> data, int currentPage, int totalPages, int totalItems, int pageSize) {
-            this.data = data;
-            this.currentPage = currentPage;
-            this.totalPages = totalPages;
-            this.totalItems = totalItems;
-            this.pageSize = pageSize;
-        }
 
-        public List<T> getData() {
-            return data;
-        }
 
-        public int getCurrentPage() {
-            return currentPage;
-        }
 
-        public int getTotalPages() {
-            return totalPages;
-        }
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestTemplate;
 
-        public int getTotalItems() {
-            return totalItems;
-        }
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateException;
+import java.security.NoSuchAlgorithmException;
+import java.security.KeyManagementException;
 
-        public int getPageSize() {
-            return pageSize;
-        }
+@Configuration
+public class RestTemplateConfig {
+
+    @Bean
+    public RestTemplate restTemplate() throws NoSuchAlgorithmException, KeyManagementException {
+        // Create an SSL context that trusts all certificates
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(null, new TrustManager[]{new InsecureTrustManager()}, null);
+
+        // Create an HTTP client request factory with the custom SSL context
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
+                .setSslcontext(sslContext)
+                .build());
+
+        return new RestTemplate(factory);
     }
 
-    public static <T> Page<T> paginate(List<T> list, int pageNumber, int pageSize) {
-        int totalItems = list.size();
-        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
-
-        if (pageNumber < 1 || pageNumber > totalPages) {
-            throw new IllegalArgumentException("Invalid page number");
+    // Custom TrustManager to trust all certificates (insecure)
+    private static class InsecureTrustManager implements X509TrustManager {
+        public X509Certificate[] getAcceptedIssuers() {
+            return null;
         }
 
-        int fromIndex = (pageNumber - 1) * pageSize;
-        int toIndex = Math.min(fromIndex + pageSize, totalItems);
-
-        if (fromIndex >= totalItems) {
-            return new Page<>(List.of(), pageNumber, totalPages, totalItems, pageSize);
+        public void checkClientTrusted(X509Certificate[] certs, String authType) {
         }
 
-        List<T> pageData = list.subList(fromIndex, toIndex);
-
-        return new Page<>(pageData, pageNumber, totalPages, totalItems, pageSize);
-    }
-
-    public static int getTotalPages(List<?> list, int pageSize) {
-        int totalItems = list.size();
-        return (int) Math.ceil((double) totalItems / pageSize);
+        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+        }
     }
 }
+
+
