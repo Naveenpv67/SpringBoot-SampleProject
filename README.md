@@ -1,20 +1,33 @@
-private void performValidationAndExpectError(String fieldName, String fieldValue, ErrorCode errorCode) throws Exception {
-    ObjectMapper objectMapper = new ObjectMapper();
-    ObjectNode requestBody = objectMapper.createObjectNode();
-    requestBody.putPOJO(fieldName, fieldValue);
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-    MvcResult result = mockMvc.perform(post("/api/v1/debitcard/view")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(requestBody.toString()))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.type", is("error")))
-            .andExpect(jsonPath("$.code", is(errorCode.name())))
-            .andExpect(jsonPath("$.errorDescription").isString()) // Ensure errorDescription is a string
-            .andReturn();
+import java.lang.reflect.Field;
 
-    // Extract the response JSON and validate errorCode and errorDescription
-    String responseJson = result.getResponse().getContentAsString();
-    JsonNode responseNode = objectMapper.readTree(responseJson);
-    assertEquals(errorCode.name(), responseNode.get("code").asText());
-    assertEquals(errorCode.getMessage(fieldName), responseNode.get("errorDescription").asText());
+@JsonSerialize
+@JsonInclude(Include.CUSTOM)
+public class BankDetailsDTO {
+
+    private String bankCode;
+    private String channel;
+    private String serviceCode;
+    private String transactingPartyCode;
+    private String externalReferenceNo;
+    private String transactionBranch;
+    private String userId;
+
+    // Constructors, getters, setters (as needed)
+
+    // Define a custom method to conditionally exclude fields based on their values
+    public boolean shouldExcludeField(Field field) throws IllegalAccessException {
+        // Customize the exclusion logic for each field here
+        if (field.getName().equals("bankCode")) {
+            String value = (String) field.get(this);
+            return "ignoreValue".equals(value);
+        }
+        // Add similar logic for other fields
+
+        // Default behavior (include the field)
+        return false;
+    }
 }
