@@ -1,33 +1,44 @@
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 
-@JsonSerialize
-@JsonInclude(Include.CUSTOM)
-public class BankDetailsDTO {
+public class IgnoreValueSerializer<T> extends JsonSerializer<T> {
+    @Override
+    public void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        gen.writeStartObject();
 
+        // Use reflection to iterate through the fields
+        for (Field field : value.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+
+            try {
+                Object fieldValue = field.get(value);
+
+                // Only include the field if its value is not "ignoreValue"
+                if (fieldValue == null || !fieldValue.equals("ignoreValue")) {
+                    gen.writeObjectField(field.getName(), fieldValue);
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        gen.writeEndObject();
+    }
+
+
+@JsonSerialize(using = IgnoreValueSerializer.class)
+public class BankDetailsDTO {
     private String bankCode;
     private String channel;
     private String serviceCode;
-    private String transactingPartyCode;
-    private String externalReferenceNo;
-    private String transactionBranch;
-    private String userId;
 
-    // Constructors, getters, setters (as needed)
-
-    // Define a custom method to conditionally exclude fields based on their values
-    public boolean shouldExcludeField(Field field) throws IllegalAccessException {
-        // Customize the exclusion logic for each field here
-        if (field.getName().equals("bankCode")) {
-            String value = (String) field.get(this);
-            return "ignoreValue".equals(value);
-        }
-        // Add similar logic for other fields
-
-        // Default behavior (include the field)
-        return false;
-    }
+    // Getters and setters
 }
+
+
+    
