@@ -1,44 +1,34 @@
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-
-public class IgnoreValueSerializer<T> extends JsonSerializer<T> {
-    @Override
-    public void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeStartObject();
-
-        // Use reflection to iterate through the fields
-        for (Field field : value.getClass().getDeclaredFields()) {
-            field.setAccessible(true);
-
-            try {
-                Object fieldValue = field.get(value);
-
-                // Only include the field if its value is not "ignoreValue"
-                if (fieldValue == null || !fieldValue.equals("ignoreValue")) {
-                    gen.writeObjectField(field.getName(), fieldValue);
-                }
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-
-        gen.writeEndObject();
-    }
-
-
-@JsonSerialize(using = IgnoreValueSerializer.class)
-public class BankDetailsDTO {
-    private String bankCode;
-    private String channel;
-    private String serviceCode;
-
-    // Getters and setters
+@Test
+@DisplayName("Validate Blank Bank Code")
+public void testBankCodeBlankValidation() throws Exception {
+    validRequest.getBankDetailsDTO().setBankCode("");
+    performValidationAndExpectError("bankCode", validRequest, ErrorCode.V0001);
 }
 
+@Test
+@DisplayName("Validate Null Bank Code")
+public void testBankCodeNullValidation() throws Exception {
+    validRequest.getBankDetailsDTO().setBankCode(null);
+    performValidationAndExpectError("bankCode", validRequest, ErrorCode.V0001);
+}
 
-    
+@Test
+@DisplayName("Validate Special Characters in Bank Code")
+public void testBankCodeSpecialCharacterValidation() throws Exception {
+    validRequest.getBankDetailsDTO().setBankCode("!@#");
+    performValidationAndExpectError("bankCode", validRequest, ErrorCode.Ve002);
+}
+
+@Test
+@DisplayName("Validate Alphanumeric Bank Code")
+public void testBankCodeAlphanumericValidation() throws Exception {
+    validRequest.getBankDetailsDTO().setBankCode("alpha123");
+    performValidationAndExpectError("bankCode", validRequest, ErrorCode.Ve004);
+}
+
+@Test
+@DisplayName("Validate Missing Bank Code")
+public void testBankCodeMissingValidation() throws Exception {
+    validRequest.getBankDetailsDTO().setBankCode(null);
+    performValidationAndExpectError("bankCode", validRequest, ErrorCode.V0001);
+}
