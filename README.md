@@ -1,31 +1,11 @@
-import java.io.*;
-
-public class AddConsentResponseResetter {
-    public static AddConsentResponse reset(AddConsentResponse original) throws IOException, ClassNotFoundException {
-        // Serialize the original object
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream out = new ObjectOutputStream(bos);
-        out.writeObject(original);
-        out.close();
-
-        // Deserialize the serialized object into a new instance
-        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-        ObjectInputStream in = new ObjectInputStream(bis);
-        AddConsentResponse newObject = (AddConsentResponse) in.readObject();
-        in.close();
-
-
-
-        return newObject;
+@Override
+public AddConsentResponse clone() {
+    try {
+        AddConsentResponse clonedObject = (AddConsentResponse) super.clone();
+        // You may also perform deep or shallow cloning as needed
+        return clonedObject;
+    } catch (CloneNotSupportedException e) {
+        // Handle any exceptions, but this is unlikely to occur with Cloneable
+        return null;
     }
 }
-
-
-AddConsentResponse original = AddConsentResponse.getInstance();
-// ... Modify the original object as needed
-
-AddConsentResponse resetObject = AddConsentResponseResetter.reset(original);
-
-
-
-
