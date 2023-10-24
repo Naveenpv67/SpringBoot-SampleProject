@@ -1,41 +1,31 @@
 /**
- * Data class representing a request or response for Debit Card Management System (DCMS) Services.
- * This class encapsulates the structure for interacting with DCMS services, specifically for managing debit card information.
+ * Represents a request for the Permanent Blocking of a Debit Card.
+ * This model class contains information related to the request for permanently blocking a debit card.
  *
- * @author M26256 (Alvary Mani Teja)
- * @since 10/16/2023
+ * @author N20076 (Naveen)
+ * @version 1.0.0
+ * @since 04/18/2823
  */
-public class DCMSServices {
+@Getter
+@Setter
+public class ScvReg {
+    /**
+     * Information related to reissuing a Debit Card.
+     */
+    private ReIssueDCReq reissueDCReq;
 
     /**
-     * Header information for the request or response to DCMS services.
-     * The header typically contains metadata and authentication details specific to the debit card transaction.
-     * For example, it may include authentication tokens, client information, and transaction IDs.
+     * Information related to reissuing a Debit Card.
      */
-    public Header header;
+    private ReIssueDBCard reIssueDBCard;
 
     /**
-     * Body content for the request or response to DCMS services.
-     * The body holds the actual data and parameters relevant to the debit card operation.
-     * It can include information such as cardholder details, card numbers, PINs, and transaction specifics.
+     * Information related to hotlisting a Debit Card.
      */
-    public Body body;
+    private CardHotlistReq cardHotlistReq;
 
     /**
-     * Data class representing the header information for DCMS services.
-     * The header contains metadata and authentication details specific to debit card transactions.
-     * It typically includes information like authentication tokens, client credentials, and request identifiers.
+     * A request string associated with the request.
      */
-    public class Header {
-        // Define fields specific to the header, such as tokens, client information, etc.
-    }
-
-    /**
-     * Data class representing the body content for DCMS services.
-     * The body holds the actual data related to debit card transactions.
-     * It can include cardholder information, card details, transaction data, and any other relevant parameters.
-     */
-    public class Body {
-        // Define fields specific to the body, such as cardholder details, card information, and transaction specifics.
-    }
+    private RequestString requestString;
 }
