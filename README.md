@@ -1,27 +1,25 @@
 /**
- * POJO class representing a request or response for DCMS (Debit Card Management System) services.
- * This class serves as a generic structure for interacting with various DCMS services.
- * It may contain common fields required for service requests or responses within the DCMS ecosystem.
+ * POJO class representing a request for hotlisting a debit card.
+ * This class contains information about the card number, reason, and remarks for hotlisting.
  *
- * @author N28876 (Naveen)
+ * @author N20076 (Naveen)
  * @version 1.0.0
  * @since 16/10/2023
  */
-@Getter
-@Setter
-public class SryRea {
+@Data
+public class CardHotlistReq {
     /**
-     * Information related to reissuing a Debit Card.
+     * The card number of the debit card to be hotlisted.
      */
-    private ReIssueDCReq reissueDCReq;
+    private Long cardNo;
 
     /**
-     * Information related to reissuing a Debit Card.
+     * The reason for hotlisting the debit card, e.g., loss or theft.
      */
-    private ReIssueDBCard reIssueDBCard;
+    private String reason;
 
     /**
-     * Information related to hotlisting a Debit Card.
+     * Additional remarks or comments related to the hotlisting request.
      */
-    private CardHotlistReq cardHotlistReq;
+    private String remarks;
 }
