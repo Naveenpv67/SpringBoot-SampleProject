@@ -1,30 +1,15 @@
 /**
- * This is a Response class for the Permanent Blocking of Debit Card REST API.
- * It represents the response structure for the permanent blocking operation of a debit card.
+ * This class represents a response string that may contain information related to DCMS (Debit Card Management System) services.
+ * It serves as a container for data associated with DCMS services and is typically used within responses.
  *
  * @author [Your Name]
  * @version [Version Number]
  * @since [Date]
  */
 @Data
-public class PermanentBlockDebitCardResponseDTO extends AResponse {
+public class ResponseString {
     /**
-     * The status of the response, including error codes and reply text.
+     * An instance of the DCMSServices class, which may hold information related to DCMS services.
      */
-    public Status status;
-
-    /**
-     * The maintenance type associated with the response.
-     */
-    public String maintenanceType;
-
-    /**
-     * The configuration version ID for the response.
-     */
-    public String configVersionId;
-
-    /**
-     * Additional response information in string format.
-     */
-    private ResponseString responseString;
+    private DCMSServices dCMSServices;
 }
