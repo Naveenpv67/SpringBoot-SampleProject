@@ -1,25 +1,30 @@
 /**
- * POJO class representing a request for hotlisting a debit card.
- * This class contains information about the card number, reason, and remarks for hotlisting.
+ * This is a Response class for the Permanent Blocking of Debit Card REST API.
+ * It represents the response structure for the permanent blocking operation of a debit card.
  *
- * @author N20076 (Naveen)
- * @version 1.0.0
- * @since 16/10/2023
+ * @author [Your Name]
+ * @version [Version Number]
+ * @since [Date]
  */
 @Data
-public class CardHotlistReq {
+public class PermanentBlockDebitCardResponseDTO extends AResponse {
     /**
-     * The card number of the debit card to be hotlisted.
+     * The status of the response, including error codes and reply text.
      */
-    private Long cardNo;
+    public Status status;
 
     /**
-     * The reason for hotlisting the debit card, e.g., loss or theft.
+     * The maintenance type associated with the response.
      */
-    private String reason;
+    public String maintenanceType;
 
     /**
-     * Additional remarks or comments related to the hotlisting request.
+     * The configuration version ID for the response.
      */
-    private String remarks;
+    public String configVersionId;
+
+    /**
+     * Additional response information in string format.
+     */
+    private ResponseString responseString;
 }
