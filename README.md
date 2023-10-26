@@ -1,41 +1,44 @@
+// For the 'Version' field
 @Test
-@DisplayName("Validate Null DebitCardHotlistingRequestDTO")
-public void testBlankValidation1() throws Exception {
-    validRequest.setDebitCardHotlistingRequestDTO(null);
-    performValidationAndExpectError("DebitCardHotlistingRequestDTO", validRequest, ErrorCode.V0009);
+@DisplayName("Validate Blank Version")
+public void testHeaderVersionBlankValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion("");
+    performValidationAndExpectError("Version", validRequest, ErrorCode.V0001);
 }
 
 @Test
-@DisplayName("Validate Null RequestString")
-public void testBlankValidation2() throws Exception {
-    validRequest.getDebitCardHotlistingRequestDTO().setRequestString(null);
-    performValidationAndExpectError("RequestString", validRequest, ErrorCode.V0009);
+@DisplayName("Validate Null Version")
+public void testHeaderVersionNullValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion(null);
+    performValidationAndExpectError("Version", validRequest, ErrorCode.V0001);
 }
 
 @Test
-@DisplayName("Validate Null DCMSServices")
-public void testBlankValidation3() throws Exception {
-    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().setDCMSServices(null);
-    performValidationAndExpectError("DCMSServices", validRequest, ErrorCode.V0009);
+@DisplayName("Add Valid Version")
+public void testHeaderVersionValidValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion("1.0");
+    performValidationAndExpectNoError(validRequest);
 }
 
 @Test
-@DisplayName("Validate Null Header")
-public void testBlankValidation4() throws Exception {
-    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().setHeader(null);
-    performValidationAndExpectError("Header", validRequest, ErrorCode.V0009);
+@DisplayName("Validate Version Length")
+public void testHeaderVersionLengthValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion("1234567890");
+    performValidationAndExpectError("Version", validRequest, ErrorCode.V000X);
 }
 
 @Test
-@DisplayName("Validate Null Body")
-public void testBlankValidation5() throws Exception {
-    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().setBody(null);
-    performValidationAndExpectError("Body", validRequest, ErrorCode.V0009);
+@DisplayName("Add Valid Version with Special Characters")
+public void testHeaderVersionSpecialCharsValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion("1.0@");
+    performValidationAndExpectError("Version", validRequest, ErrorCode.V000Y);
 }
 
 @Test
-@DisplayName("Validate Null SrvReg")
-public void testBlankValidation6() throws Exception {
-    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getBody().setSrxReg(null);
-    performValidationAndExpectError("SrvReg", validRequest, ErrorCode.V0009);
+@DisplayName("Add Valid Version with Alphanumeric Characters")
+public void testHeaderVersionAlphanumericValidation() throws Exception {
+    validRequest.getDebitCardHotlistingRequestDTO().getRequestString().getDCMSServices().getHeader().setVersion("V1ersion1");
+    performValidationAndExpectNoError(validRequest);
 }
+
+// Repeat the above structure for the rest of the fields in the 'Header' object with their respective validations.
