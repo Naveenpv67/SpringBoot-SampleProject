@@ -1,39 +1,23 @@
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 
-public class JsonArrayProcessor {
-    public static void main(String[] args) {
-        // Your array of JSON objects as a string
-        String jsonArrayString = "[{\"name\":\"John\",\"age\":30,\"city\":\"New York\"},{\"name\":\"Alice\",\"age\":25,\"city\":\"London\"}]";
+@RestController
+public class FileController {
 
-        // Specify the field name you want to extract
-        String fieldName = "name";
+    @GetMapping("/getFilesInFolder")
+    public List<String> getFilesInFolder(@RequestParam String folderPath) {
+        File folder = new File(folderPath);
 
-        // Parse JSON array using Jackson
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonArray = objectMapper.readTree(jsonArrayString);
-
-            // List to store extracted values
-            List<String> fieldValues = new ArrayList<>();
-
-            // Iterate through each JSON object in the array
-            for (JsonNode jsonObject : jsonArray) {
-                // Extract the value of the specified field
-                if (jsonObject.has(fieldName)) {
-                    String fieldValue = jsonObject.get(fieldName).asText();
-                    fieldValues.add(fieldValue);
-                }
-            }
-
-            // Print the list of extracted values
-            System.out.println("Extracted Values: " + fieldValues);
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (folder.exists() && folder.isDirectory()) {
+            String[] fileNames = folder.list();
+            return Arrays.asList(fileNames);
+        } else {
+            throw new IllegalArgumentException("Invalid folder path or not a directory");
         }
     }
 }
