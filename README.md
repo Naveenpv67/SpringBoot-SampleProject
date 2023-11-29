@@ -1,91 +1,26 @@
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+public class JsonNodeWithFileName {
+    private String filename;
+    private JsonNode jsonNode;
 
-@RestController
-public class JsonArrayFromFoldersController {
-
-    @PostMapping("/processFolders")
-    public ResponseEntity<ProcessedFilesResponse> processFolders(@RequestBody String mainFolderPath) {
-        try {
-            List<JsonNodeWithFileName> jsonArray = new ArrayList<>();
-            int processedFilesCount = 0;
-
-            File mainFolder = new File(mainFolderPath);
-
-            if (!mainFolder.exists() || !mainFolder.isDirectory()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-
-            List<JsonNode> jsonNodesWithPK = new ArrayList<>();
-            List<JsonNode> jsonNodesWithoutPK = new ArrayList<>();
-
-            File[] subfolders = mainFolder.listFiles(File::isDirectory);
-            if (subfolders != null) {
-                for (File subfolder : subfolders) {
-                    File jsonFile = findJsonFileInFolder(subfolder);
-
-                    if (jsonFile != null) {
-                        JsonNode jsonObject = readAndParseJson(jsonFile);
-                        if (jsonObject != null) {
-                            // Add filename as a field
-                            ((ObjectNode) jsonObject).put("filename", jsonFile.getName());
-
-                            jsonArray.add(new JsonNodeWithFileName(jsonFile.getName(), jsonObject));
-                            processedFilesCount++;
-
-                            // Differentiate based on "PK" key
-                            if (jsonObject.has("PK")) {
-                                jsonNodesWithPK.add(jsonObject);
-                            } else {
-                                jsonNodesWithoutPK.add(jsonObject);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add jsonNodesWithoutPK to the end of jsonArray
-            jsonArray.addAll(convertToWithFileNameList(jsonNodesWithoutPK));
-
-            ProcessedFilesResponse response = new ProcessedFilesResponse(jsonArray, processedFilesCount);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public JsonNodeWithFileName(String filename, JsonNode jsonNode) {
+        this.filename = removeJsonExtension(filename);
+        this.jsonNode = jsonNode;
     }
 
-    private List<JsonNodeWithFileName> convertToWithFileNameList(List<JsonNode> jsonNodes) {
-        List<JsonNodeWithFileName> result = new ArrayList<>();
-        for (JsonNode node : jsonNodes) {
-            // Assume "filename" is not already present in the JSON object
-            ((ObjectNode) node).put("filename", ""); // You can put any default value
-            result.add(new JsonNodeWithFileName("", node));
-        }
-        return result;
+    public String getFilename() {
+        return filename;
     }
 
-    private File findJsonFileInFolder(File folder) {
-        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
-        if (files != null && files.length > 0) {
-            return files[0];
-        }
-        return null;
+    public JsonNode getJsonNode() {
+        return jsonNode;
     }
 
-    private JsonNode readAndParseJson(File jsonFile) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readTree(jsonFile);
+    private String removeJsonExtension(String filename) {
+        if (filename.endsWith(".json")) {
+            return filename.substring(0, filename.length() - 5);
+        }
+        return filename;
     }
 }
