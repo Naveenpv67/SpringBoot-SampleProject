@@ -17,14 +17,17 @@ public class JsonArrayFromFoldersController {
     @PostMapping("/processFolders")
     public ResponseEntity<ProcessedFilesResponse> processFolders(@RequestBody String mainFolderPath) {
         try {
-            List<JsonNode> jsonNodesWithPK = new ArrayList<>();
-            List<JsonNode> jsonNodesWithoutPK = new ArrayList<>();
+            List<JsonNode> jsonArray = new ArrayList<>();
+            int processedFilesCount = 0;
 
             File mainFolder = new File(mainFolderPath);
 
             if (!mainFolder.exists() || !mainFolder.isDirectory()) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
+
+            List<JsonNode> jsonNodesWithPK = new ArrayList<>();
+            List<JsonNode> jsonNodesWithoutPK = new ArrayList<>();
 
             File[] subfolders = mainFolder.listFiles(File::isDirectory);
             if (subfolders != null) {
@@ -34,6 +37,10 @@ public class JsonArrayFromFoldersController {
                     if (jsonFile != null) {
                         JsonNode jsonObject = readAndParseJson(jsonFile);
                         if (jsonObject != null) {
+                            jsonArray.add(jsonObject);
+                            processedFilesCount++;
+
+                            // Differentiate based on "PK" key
                             if (jsonObject.has("PK")) {
                                 jsonNodesWithPK.add(jsonObject);
                             } else {
@@ -44,10 +51,10 @@ public class JsonArrayFromFoldersController {
                 }
             }
 
-            // Add jsonNodesWithoutPK to the end of jsonNodesWithPK
-            jsonNodesWithPK.addAll(jsonNodesWithoutPK);
+            // Add jsonNodesWithoutPK to the end of jsonArray
+            jsonArray.addAll(jsonNodesWithoutPK);
 
-            ProcessedFilesResponse response = new ProcessedFilesResponse(jsonNodesWithPK, jsonNodesWithPK.size());
+            ProcessedFilesResponse response = new ProcessedFilesResponse(jsonArray, processedFilesCount);
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (IOException e) {
