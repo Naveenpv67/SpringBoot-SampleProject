@@ -3,55 +3,42 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
-@RequestMapping("/jsonFile")
-public class MaxFieldsObjectFileController {
+public class JsonArrayFromFoldersController {
 
-    @PostMapping("/findMaxFieldsObject")
-    public ResponseEntity<Map<String, Object>> findMaxFieldsObjectFromFile(@RequestParam("file") MultipartFile file) {
+    @PostMapping("/processFolders")
+    public ResponseEntity<List<JsonNode>> processFolders(@RequestBody String mainFolderPath) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode parentArray = objectMapper.readTree(file.getBytes());
+            List<JsonNode> jsonArray = new ArrayList<>();
+            File mainFolder = new File(mainFolderPath);
 
-            if (!parentArray.isArray() || parentArray.size() == 0) {
+            if (!mainFolder.exists() || !mainFolder.isDirectory()) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
 
-            JsonNode firstArray = parentArray.get(0);
-            if (!firstArray.isArray() || firstArray.size() == 0) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
+            File[] subfolders = mainFolder.listFiles(File::isDirectory);
+            if (subfolders != null) {
+                for (File subfolder : subfolders) {
+                    File jsonFile = findJsonFileInFolder(subfolder);
 
-            int maxFieldsCount = 0;
-            JsonNode maxFieldsObject = null;
-
-            Iterator<JsonNode> iterator = firstArray.elements();
-
-            while (iterator.hasNext()) {
-                JsonNode obj = iterator.next();
-                int fieldsCount = countFields(obj);
-
-                if (fieldsCount > maxFieldsCount) {
-                    maxFieldsCount = fieldsCount;
-                    maxFieldsObject = obj;
+                    if (jsonFile != null) {
+                        JsonNode jsonObject = readAndParseJson(jsonFile);
+                        if (jsonObject != null) {
+                            jsonArray.add(jsonObject);
+                        }
+                    }
                 }
             }
 
-            Map<String, Object> result = new HashMap<>();
-            result.put("maxFieldsObject", maxFieldsObject);
-            result.put("fieldsCount", maxFieldsCount);
-
-            return new ResponseEntity<>(result, HttpStatus.OK);
+            return new ResponseEntity<>(jsonArray, HttpStatus.OK);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -59,15 +46,16 @@ public class MaxFieldsObjectFileController {
         }
     }
 
-    private int countFields(JsonNode node) {
-        int count = node.size();
-        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> entry = fields.next();
-            if (entry.getValue().isObject()) {
-                count += countFields(entry.getValue());
-            }
+    private File findJsonFileInFolder(File folder) {
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null && files.length > 0) {
+            return files[0];
         }
-        return count;
+        return null;
+    }
+
+    private JsonNode readAndParseJson(File jsonFile) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readTree(jsonFile);
     }
 }
