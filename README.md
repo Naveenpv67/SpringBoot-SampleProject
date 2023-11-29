@@ -15,9 +15,11 @@ import java.util.List;
 public class JsonArrayFromFoldersController {
 
     @PostMapping("/processFolders")
-    public ResponseEntity<List<JsonNode>> processFolders(@RequestBody String mainFolderPath) {
+    public ResponseEntity<ProcessedFilesResponse> processFolders(@RequestBody String mainFolderPath) {
         try {
             List<JsonNode> jsonArray = new ArrayList<>();
+            int processedFilesCount = 0;
+
             File mainFolder = new File(mainFolderPath);
 
             if (!mainFolder.exists() || !mainFolder.isDirectory()) {
@@ -33,12 +35,14 @@ public class JsonArrayFromFoldersController {
                         JsonNode jsonObject = readAndParseJson(jsonFile);
                         if (jsonObject != null) {
                             jsonArray.add(jsonObject);
+                            processedFilesCount++;
                         }
                     }
                 }
             }
 
-            return new ResponseEntity<>(jsonArray, HttpStatus.OK);
+            ProcessedFilesResponse response = new ProcessedFilesResponse(jsonArray, processedFilesCount);
+            return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (IOException e) {
             e.printStackTrace();
