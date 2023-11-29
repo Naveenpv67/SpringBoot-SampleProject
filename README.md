@@ -17,7 +17,7 @@ public class JsonArrayFromFoldersController {
     @PostMapping("/processFolders")
     public ResponseEntity<ProcessedFilesResponse> processFolders(@RequestBody String mainFolderPath) {
         try {
-            List<JsonNode> jsonArray = new ArrayList<>();
+            List<JsonNodeWithFileName> jsonArray = new ArrayList<>();
             int processedFilesCount = 0;
 
             File mainFolder = new File(mainFolderPath);
@@ -37,7 +37,10 @@ public class JsonArrayFromFoldersController {
                     if (jsonFile != null) {
                         JsonNode jsonObject = readAndParseJson(jsonFile);
                         if (jsonObject != null) {
-                            jsonArray.add(jsonObject);
+                            // Add filename as a field
+                            ((ObjectNode) jsonObject).put("filename", jsonFile.getName());
+
+                            jsonArray.add(new JsonNodeWithFileName(jsonFile.getName(), jsonObject));
                             processedFilesCount++;
 
                             // Differentiate based on "PK" key
@@ -52,7 +55,7 @@ public class JsonArrayFromFoldersController {
             }
 
             // Add jsonNodesWithoutPK to the end of jsonArray
-            jsonArray.addAll(jsonNodesWithoutPK);
+            jsonArray.addAll(convertToWithFileNameList(jsonNodesWithoutPK));
 
             ProcessedFilesResponse response = new ProcessedFilesResponse(jsonArray, processedFilesCount);
             return new ResponseEntity<>(response, HttpStatus.OK);
@@ -61,6 +64,16 @@ public class JsonArrayFromFoldersController {
             e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private List<JsonNodeWithFileName> convertToWithFileNameList(List<JsonNode> jsonNodes) {
+        List<JsonNodeWithFileName> result = new ArrayList<>();
+        for (JsonNode node : jsonNodes) {
+            // Assume "filename" is not already present in the JSON object
+            ((ObjectNode) node).put("filename", ""); // You can put any default value
+            result.add(new JsonNodeWithFileName("", node));
+        }
+        return result;
     }
 
     private File findJsonFileInFolder(File folder) {
