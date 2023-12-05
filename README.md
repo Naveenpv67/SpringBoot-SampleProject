@@ -1,96 +1,109 @@
+<!-- Add JUNG library -->
+<dependency>
+    <groupId>net.sf.jung</groupId>
+    <artifactId>jung-algorithms</artifactId>
+    <version>2.1.1</version>
+</dependency>
+<dependency>
+    <groupId>net.sf.jung</groupId>
+    <artifactId>jung-api</artifactId>
+    <version>2.1.1</version>
+</dependency>
+<dependency>
+    <groupId>net.sf.jung</groupId>
+    <artifactId>jung-graph-impl</artifactId>
+    <version>2.1.1</version>
+</dependency>
+<dependency>
+    <groupId>net.sf.jung</groupId>
+    <artifactId>jung-visualization</artifactId>
+    <version>2.1.1</version>
+</dependency>
+
+<!-- Spring Boot dependencies -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.uci.ics.jung.graph.DirectedSparseGraph;
+import org.apache.commons.collections15.Transformer;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
+import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-@RestController
-public class JsonArrayFromFoldersController {
+@SpringBootApplication
+public class JsonGraphVisualizationApplication {
 
-    @PostMapping("/processFolders")
-    public ResponseEntity<ProcessedFilesResponse> processFolders(@RequestBody String mainFolderPath) {
-        try {
-            List<JsonNodeWithFilename> jsonArray = new ArrayList<>();
-            int processedFilesCount = 0;
+    public static void main(String[] args) {
+        SpringApplication.run(JsonGraphVisualizationApplication.class, args);
+    }
 
-            File mainFolder = new File(mainFolderPath);
+    @RestController
+    public static class JsonGraphController {
 
-            if (!mainFolder.exists() || !mainFolder.isDirectory()) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
+        @PostMapping("/visualize")
+        public ResponseEntity<String> visualizeGraph(@RequestBody String jsonData) {
+            try {
+                JsonNode[] jsonNodes = new ObjectMapper().readValue(jsonData, JsonNode[].class);
+                DirectedSparseGraph<String, String> graph = new DirectedSparseGraph<>();
 
-            List<JsonNodeWithFilename> jsonNodesWithPK = new ArrayList<>();
-            List<JsonNodeWithFilename> jsonNodesWithoutPK = new ArrayList<>();
+                for (JsonNode node : jsonNodes) {
+                    String nodeLabel = node.fieldNames().next();
+                    graph.addVertex(nodeLabel);
 
-            File[] subfolders = mainFolder.listFiles(File::isDirectory);
-            if (subfolders != null) {
-                for (File subfolder : subfolders) {
-                    File jsonFile = findJsonFileInFolder(subfolder);
-
-                    if (jsonFile != null) {
-                        JsonNode jsonObject = readAndParseJson(jsonFile);
-                        if (jsonObject != null) {
-                            processedFilesCount++;
-
-                            // Differentiate based on "PK" key
-                            if (jsonObject.has("PK")) {
-                                jsonNodesWithPK.add(new JsonNodeWithFilename(jsonFile.getName(), jsonObject));
-                            } else {
-                                jsonNodesWithoutPK.add(new JsonNodeWithFilename(jsonFile.getName(), jsonObject));
-                            }
-                        }
+                    for (JsonNode child : node) {
+                        String childLabel = child.fieldNames().next();
+                        graph.addVertex(childLabel);
+                        graph.addEdge(nodeLabel + "-" + childLabel, nodeLabel, childLabel);
                     }
                 }
+
+                return new ResponseEntity<>(getGraphVisualization(graph), HttpStatus.OK);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return new ResponseEntity<>("Error processing JSON data", HttpStatus.BAD_REQUEST);
             }
-
-            // Add jsonNodesWithoutPK to the end of jsonArray
-            jsonArray.addAll(jsonNodesWithPK);
-            jsonArray.addAll(jsonNodesWithoutPK);
-
-            ProcessedFilesResponse response = new ProcessedFilesResponse(jsonArray, processedFilesCount);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private File findJsonFileInFolder(File folder) {
-        File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
-        if (files != null && files.length > 0) {
-            return files[0];
-        }
-        return null;
-    }
-
-    private JsonNode readAndParseJson(File jsonFile) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readTree(jsonFile);
-    }
-
-    private static class JsonNodeWithFilename {
-        private String filename;
-        private JsonNode jsonNode;
-
-        public JsonNodeWithFilename(String filename, JsonNode jsonNode) {
-            this.filename = filename;
-            this.jsonNode = jsonNode;
         }
 
-        public String getFilename() {
-            return filename;
+        private String getGraphVisualization(DirectedSparseGraph<String, String> graph) {
+            Transformer<String, Paint> vertexPaint = s -> Color.GREEN;
+            VisualizationImageServer<String, String> vs =
+                    new VisualizationImageServer<>(new GraphLabelTransformer(), vertexPaint, vertexPaint);
+            vs.setPreferredSize(new Dimension(400, 400));
+
+            vs.getRenderContext().setVertexLabelTransformer(new GraphLabelTransformer());
+            vs.getRenderContext().setEdgeLabelTransformer(new GraphLabelTransformer());
+
+            vs.getRenderContext().setVertexLabelTransformer(Object::toString);
+            vs.getRenderContext().setEdgeLabelTransformer(Object::toString);
+
+            vs.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
+
+            return vs.toString();
         }
 
-        public JsonNode getJsonNode() {
-            return jsonNode;
+        private static class GraphLabelTransformer implements Transformer<Object, String> {
+            @Override
+            public String transform(Object input) {
+                return input.toString();
+            }
         }
     }
 }
+
