@@ -1,60 +1,111 @@
+<!-- Add Aerospike Java client dependency -->
+<dependency>
+    <groupId>com.aerospike</groupId>
+    <artifactId>aerospike-client</artifactId>
+    <version>5.2.0</version>
+</dependency>
+
+<!-- Spring Boot dependencies -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+
+
+
+# Aerospike configuration
+aerospike.host=127.0.0.1
+aerospike.port=3000
+
+
+
+import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.Bin;
+import com.aerospike.client.Key;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.uci.ics.jung.graph.DirectedSparseGraph;
-import edu.uci.ics.jung.visualization.VisualizationImageServer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 
-public class JsonGraphVisualization {
+@SpringBootApplication
+public class JsonImportApplication {
 
     public static void main(String[] args) {
-        String jsonData = "[{\"Pk\":1,\"CustId\":11,\"custName\":\"abc\"}," +
-                          "{\"Pk\":10,\"AccNum\":123,\"Acctype\":\"CASA\",\"CustId\":11}," +
-                          "{\"Pk\":13,\"CardNum\":1234,\"AccNum\":123,\"CustId\":11}]";
+        SpringApplication.run(JsonImportApplication.class, args);
+    }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            JsonNode[] jsonNodes = objectMapper.readValue(jsonData, JsonNode[].class);
+    @RestController
+    @RequestMapping("/api/json-import")
+    public static class JsonImportController {
 
-            DirectedSparseGraph<String, String> graph = new DirectedSparseGraph<>();
+        @Value("${aerospike.host}")
+        private String aerospikeHost;
 
-            for (JsonNode node : jsonNodes) {
-                String nodeLabel = node.fieldNames().next();
-                graph.addVertex(nodeLabel);
+        @Value("${aerospike.port}")
+        private int aerospikePort;
 
-                for (JsonNode child : node) {
-                    String childLabel = child.fieldNames().next();
-                    graph.addVertex(childLabel);
-                    graph.addEdge(nodeLabel + "-" + childLabel, nodeLabel, childLabel);
+        @PostMapping
+        public ResponseEntity<String> importJsonData(
+                @RequestParam("file") MultipartFile file
+        ) {
+            try {
+                // Connect to Aerospike
+                AerospikeClient aerospikeClient = new AerospikeClient(aerospikeHost, aerospikePort);
+
+                // Extract set name from the filename
+                String originalFilename = file.getOriginalFilename();
+                String setName = originalFilename != null ? originalFilename.split("\\.")[0] : "defaultSet";
+
+                // Read JSON data from the file
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(file.getBytes());
+
+                // Import JSON data into Aerospike
+                importDataIntoAerospike(jsonNode, aerospikeClient, setName);
+
+                // Close Aerospike connection
+                aerospikeClient.close();
+
+                return new ResponseEntity<>("Data imported successfully into set: " + setName, HttpStatus.OK);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return new ResponseEntity<>("Error reading the JSON file: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new ResponseEntity<>("Error importing data into Aerospike: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        }
+
+        private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospikeClient, String setName) {
+            // Assuming the JSON represents a list of objects
+            for (JsonNode objectNode : jsonNode) {
+                // Assuming each object has a unique identifier field named "id"
+                String id = objectNode.get("id").asText();
+
+                // Create Aerospike key
+                Key key = new Key("test", setName, id);
+
+                // Create Aerospike bins from JSON fields
+                for (String fieldName : objectNode.fieldNames()) {
+                    Bin bin = new Bin(fieldName, objectNode.get(fieldName).asText());
+                    aerospikeClient.put(null, key, bin);
                 }
             }
-
-            visualizeGraph(graph);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
-
-    private static void visualizeGraph(DirectedSparseGraph<String, String> graph) {
-        JFrame frame = new JFrame();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        VisualizationImageServer<String, String> vs =
-                new VisualizationImageServer<>((String s) -> s, (s) -> Color.GREEN, (s) -> Color.GREEN);
-        vs.setPreferredSize(new Dimension(400, 400));
-
-        frame.getContentPane().add(vs);
-        frame.pack();
-        frame.setVisible(true);
-
-        vs.getRenderContext().setVertexLabelTransformer((String s) -> s);
-        vs.getRenderContext().setEdgeLabelTransformer((String s) -> s);
-
-        vs.getRenderContext().setVertexLabelTransformer(Object::toString);
-        vs.getRenderContext().setEdgeLabelTransformer(Object::toString);
-
-        vs.getRenderContext().setVertexFillPaintTransformer((String s) -> Color.GREEN);
-    }
 }
+
