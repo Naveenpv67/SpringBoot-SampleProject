@@ -13,7 +13,12 @@ private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospik
 
 private void handleJsonObject(JsonNode objectNode, AerospikeClient aerospikeClient, String setName) {
     // Extract the unique identifier field "PK"
-    String id = objectNode.get("PK").asText();
+    JsonNode idNode = objectNode.get("PK");
+    if (idNode == null || !idNode.isTextual()) {
+        throw new IllegalArgumentException("Invalid or missing 'PK' field in the JSON structure");
+    }
+
+    String id = idNode.asText();
 
     // Create Aerospike key
     Key key = new Key("test", setName, id);
