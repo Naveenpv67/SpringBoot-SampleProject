@@ -1,6 +1,3 @@
-// Import statement
-import com.fasterxml.jackson.databind.node.ArrayNode;
-
 // Inside the importDataIntoAerospike method
 private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospikeClient, String setName) {
     if (jsonNode.isArray()) {
@@ -18,8 +15,8 @@ private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospik
 }
 
 private void handleJsonObject(JsonNode objectNode, AerospikeClient aerospikeClient, String setName) {
-    // Assuming each object has a unique identifier field named "id"
-    String id = objectNode.get("id").asText();
+    // Extract the unique identifier field
+    String id = extractId(objectNode);
 
     // Create Aerospike key
     Key key = new Key("test", setName, id);
@@ -31,4 +28,23 @@ private void handleJsonObject(JsonNode objectNode, AerospikeClient aerospikeClie
         Bin bin = new Bin(fieldName, fieldValue);
         aerospikeClient.put(null, key, bin);
     });
+}
+
+private String extractId(JsonNode objectNode) {
+    // Assuming each object has a unique identifier field named "PK"
+    JsonNode idNode = objectNode.get("PK");
+    if (idNode != null && idNode.isTextual()) {
+        return idNode.asText();
+    }
+
+    // If "PK" is not found at the top level, you may need to traverse nested structures
+    // Adjust this part based on your JSON structure
+    // For example, if the unique identifier is inside a nested object "nestedObject" -> "PK"
+    JsonNode nestedIdNode = objectNode.path("nestedObject").path("PK");
+    if (nestedIdNode != null && nestedIdNode.isTextual()) {
+        return nestedIdNode.asText();
+    }
+
+    // If the unique identifier is not found, handle accordingly
+    throw new IllegalArgumentException("Unique identifier 'PK' not found in the JSON structure");
 }
