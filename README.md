@@ -1,34 +1,42 @@
-// Inside the importDataIntoAerospike method
-private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospikeClient, String setName) {
-    if (jsonNode.isArray() && jsonNode.size() > 0) {
-        // Extracting the first array within the outer array
-        ArrayNode firstArray = (ArrayNode) jsonNode.get(0);
-        
-        for (JsonNode objectNode : firstArray) {
-            handleJsonObject(objectNode, aerospikeClient, setName);
+// Inside the same controller class or a separate controller class
+@RestController
+@RequestMapping("/api/confirm-import")
+public class ConfirmImportController {
+
+    @Value("${aerospike.host}")
+    private String aerospikeHost;
+
+    @Value("${aerospike.port}")
+    private int aerospikePort;
+
+    @GetMapping("/{setName}")
+    public ResponseEntity<List<Map<String, Object>>> confirmImport(@PathVariable String setName) {
+        try {
+            // Connect to Aerospike
+            AerospikeClient aerospikeClient = new AerospikeClient(aerospikeHost, aerospikePort);
+
+            // Query Aerospike for all records in the specified set
+            Statement statement = new Statement();
+            statement.setNamespace("test"); // Set your Aerospike namespace
+            statement.setSetName(setName);
+
+            RecordSet recordSet = aerospikeClient.query(null, statement);
+
+            // Process the records and convert them to a list of maps
+            List<Map<String, Object>> records = new ArrayList<>();
+            while (recordSet.next()) {
+                Record record = recordSet.getRecord();
+                Map<String, Object> recordMap = record != null ? record.bins : Collections.emptyMap();
+                records.add(recordMap);
+            }
+
+            // Close Aerospike connection
+            aerospikeClient.close();
+
+            return new ResponseEntity<>(records, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    } else {
-        throw new IllegalArgumentException("Invalid or empty JSON array structure");
     }
-}
-
-private void handleJsonObject(JsonNode objectNode, AerospikeClient aerospikeClient, String setName) {
-    // Extract the unique identifier field "PK"
-    JsonNode idNode = objectNode.get("PK");
-    if (idNode == null || !idNode.isTextual()) {
-        throw new IllegalArgumentException("Invalid or missing 'PK' field in the JSON structure");
-    }
-
-    String id = idNode.asText();
-
-    // Create Aerospike key
-    Key key = new Key("test", setName, id);
-
-    // Create Aerospike bins from JSON fields
-    objectNode.fields().forEachRemaining(entry -> {
-        String fieldName = entry.getKey();
-        String fieldValue = entry.getValue().asText();
-        Bin bin = new Bin(fieldName, fieldValue);
-        aerospikeClient.put(null, key, bin);
-    });
 }
