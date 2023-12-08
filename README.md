@@ -1,13 +1,14 @@
 // Inside the importDataIntoAerospike method
 private void importDataIntoAerospike(JsonNode jsonNode, AerospikeClient aerospikeClient, String setName) {
-    if (jsonNode.isArray()) {
-        // If the JSON represents an array of objects
-        ArrayNode arrayNode = (ArrayNode) jsonNode;
-        for (JsonNode objectNode : arrayNode) {
+    if (jsonNode.isArray() && jsonNode.size() > 0) {
+        // Extracting the first array within the outer array
+        ArrayNode firstArray = (ArrayNode) jsonNode.get(0);
+        
+        for (JsonNode objectNode : firstArray) {
             handleJsonObject(objectNode, aerospikeClient, setName);
         }
     } else {
-        throw new IllegalArgumentException("Invalid JSON structure");
+        throw new IllegalArgumentException("Invalid or empty JSON array structure");
     }
 }
 
