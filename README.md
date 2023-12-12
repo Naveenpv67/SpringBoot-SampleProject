@@ -1,7 +1,20 @@
-// Inside the same controller class or a separate controller class
-@RestController
-@RequestMapping("/api/aerospike")
-public class AerospikeController {
+import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.cluster.Node;
+import com.aerospike.client.cluster.Partition;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+@Service
+public class AerospikeRWService {
+
+    @Autowired
+    private AerospikeClient aerospikeClient;
 
     @Value("${aerospike.host}")
     private String aerospikeHost;
@@ -9,11 +22,7 @@ public class AerospikeController {
     @Value("${aerospike.port}")
     private int aerospikePort;
 
-    @Autowired
-    private AerospikeClient aerospikeClient;
-
-    @GetMapping("/datasets/{namespace}")
-    public ResponseEntity<List<String>> getAllDatasets(@PathVariable String namespace) {
+    public List<String> getAllDatasets(String namespace) {
         try {
             // Query Aerospike for all set names in the specified namespace
             Node[] nodes = aerospikeClient.getNodes();
@@ -26,28 +35,26 @@ public class AerospikeController {
                 }
             }
 
-            return new ResponseEntity<>(new ArrayList<>(datasetNames), HttpStatus.OK);
+            return new ArrayList<>(datasetNames);
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return Collections.emptyList();
         }
     }
 
-    @DeleteMapping("/set/{namespace}/{setName}")
-    public ResponseEntity<String> deleteSet(@PathVariable String namespace, @PathVariable String setName) {
+    public String deleteSet(String namespace, String setName) {
         try {
             // Delete the specified set
             aerospikeClient.truncate(null, namespace, setName, null);
 
-            return new ResponseEntity<>("Set '" + setName + "' deleted successfully.", HttpStatus.OK);
+            return "Set '" + setName + "' deleted successfully.";
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>("Error deleting set '" + setName + "': " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return "Error deleting set '" + setName + "': " + e.getMessage();
         }
     }
 
-    @DeleteMapping("/bulk-delete/{namespace}")
-    public ResponseEntity<String> bulkDeleteSets(@PathVariable String namespace) {
+    public String bulkDeleteSets(String namespace) {
         try {
             // Delete all sets in the specified namespace
             Node[] nodes = aerospikeClient.getNodes();
@@ -61,10 +68,10 @@ public class AerospikeController {
                 }
             }
 
-            return new ResponseEntity<>("All sets in namespace '" + namespace + "' deleted successfully.", HttpStatus.OK);
+            return "All sets in namespace '" + namespace + "' deleted successfully.";
         } catch (Exception e) {
             e.printStackTrace();
-            return new ResponseEntity<>("Error deleting sets in namespace '" + namespace + "': " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return "Error deleting sets in namespace '" + namespace + "': " + e.getMessage();
         }
     }
 }
