@@ -1,6 +1,4 @@
-import com.aerospike.client.Record;
-import com.aerospike.client.query.Statement;
-import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.Info;
 
 // ... (existing imports)
 
@@ -15,7 +13,7 @@ public class AerospikeRWService {
             Node[] nodes = aerospikeClient.getNodes();
             Map<String, List<Map<String, Object>>> datasetMap = new HashMap<>();
             for (Node node : nodes) {
-                Set<String> setNames = node.getSets(namespace);
+                Set<String> setNames = getSetNames(node, namespace);
                 for (String setName : setNames) {
                     List<Map<String, Object>> setData = getSetData(namespace, setName);
                     datasetMap.put(setName, setData);
@@ -29,29 +27,19 @@ public class AerospikeRWService {
         }
     }
 
-    private List<Map<String, Object>> getSetData(String namespace, String setName) {
-        try {
-            List<Map<String, Object>> setData = new ArrayList<>();
-            
-            // Create a statement to scan the set
-            Statement statement = new Statement();
-            statement.setNamespace(namespace);
-            statement.setSetName(setName);
-
-            // Execute the scan operation
-            RecordSet recordSet = aerospikeClient.query(null, statement);
-            while (recordSet.next()) {
-                Record record = recordSet.getRecord();
-                if (record != null) {
-                    setData.add(record.bins);
+    private Set<String> getSetNames(Node node, String namespace) {
+        String response = Info.request(node, "sets", namespace);
+        Set<String> setNames = new HashSet<>();
+        if (response != null) {
+            String[] lines = response.split(";");
+            for (String line : lines) {
+                String[] parts = line.split(":");
+                if (parts.length > 1) {
+                    setNames.add(parts[0].trim());
                 }
             }
-
-            return setData;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Collections.emptyList();
         }
+        return setNames;
     }
 
     // ... (remaining methods)
