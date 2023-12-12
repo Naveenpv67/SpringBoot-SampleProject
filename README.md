@@ -1,7 +1,7 @@
 // Inside the same controller class or a separate controller class
 @RestController
-@RequestMapping("/api/confirm-import")
-public class ConfirmImportController {
+@RequestMapping("/api/aerospike")
+public class AerospikeController {
 
     @Value("${aerospike.host}")
     private String aerospikeHost;
@@ -9,34 +9,62 @@ public class ConfirmImportController {
     @Value("${aerospike.port}")
     private int aerospikePort;
 
-    @GetMapping("/{setName}")
-    public ResponseEntity<List<Map<String, Object>>> confirmImport(@PathVariable String setName) {
+    @Autowired
+    private AerospikeClient aerospikeClient;
+
+    @GetMapping("/datasets/{namespace}")
+    public ResponseEntity<List<String>> getAllDatasets(@PathVariable String namespace) {
         try {
-            // Connect to Aerospike
-            AerospikeClient aerospikeClient = new AerospikeClient(aerospikeHost, aerospikePort);
-
-            // Query Aerospike for all records in the specified set
-            Statement statement = new Statement();
-            statement.setNamespace("test"); // Set your Aerospike namespace
-            statement.setSetName(setName);
-
-            RecordSet recordSet = aerospikeClient.query(null, statement);
-
-            // Process the records and convert them to a list of maps
-            List<Map<String, Object>> records = new ArrayList<>();
-            while (recordSet.next()) {
-                Record record = recordSet.getRecord();
-                Map<String, Object> recordMap = record != null ? record.bins : Collections.emptyMap();
-                records.add(recordMap);
+            // Query Aerospike for all set names in the specified namespace
+            Node[] nodes = aerospikeClient.getNodes();
+            Set<String> datasetNames = new HashSet<>();
+            for (Node node : nodes) {
+                Partition[] partitions = node.getPartitions();
+                for (Partition partition : partitions) {
+                    Set<String> setNames = partition.getSets();
+                    datasetNames.addAll(setNames);
+                }
             }
 
-            // Close Aerospike connection
-            aerospikeClient.close();
-
-            return new ResponseEntity<>(records, HttpStatus.OK);
+            return new ResponseEntity<>(new ArrayList<>(datasetNames), HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(Collections.emptyList(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/set/{namespace}/{setName}")
+    public ResponseEntity<String> deleteSet(@PathVariable String namespace, @PathVariable String setName) {
+        try {
+            // Delete the specified set
+            aerospikeClient.truncate(null, namespace, setName, null);
+
+            return new ResponseEntity<>("Set '" + setName + "' deleted successfully.", HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Error deleting set '" + setName + "': " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/bulk-delete/{namespace}")
+    public ResponseEntity<String> bulkDeleteSets(@PathVariable String namespace) {
+        try {
+            // Delete all sets in the specified namespace
+            Node[] nodes = aerospikeClient.getNodes();
+            for (Node node : nodes) {
+                Partition[] partitions = node.getPartitions();
+                for (Partition partition : partitions) {
+                    Set<String> setNames = partition.getSets();
+                    for (String setName : setNames) {
+                        aerospikeClient.truncate(null, namespace, setName, null);
+                    }
+                }
+            }
+
+            return new ResponseEntity<>("All sets in namespace '" + namespace + "' deleted successfully.", HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Error deleting sets in namespace '" + namespace + "': " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
