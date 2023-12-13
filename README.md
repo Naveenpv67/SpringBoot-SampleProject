@@ -1,19 +1,13 @@
-package main
+# syntax=docker/dockerfile:1
 
-import (
-    "fmt"
-    "net/http"
-)
+FROM golang:1.19-alpine
 
-func main() {
-    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, "Hello, Docker!")
-    })
+WORKDIR /app
 
-    port := 8080
-    fmt.Printf("Starting server on :%d...\n", port)
-    err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-    if err != nil {
-        fmt.Printf("Error: %s\n", err)
-    }
-}
+COPY . .
+
+RUN go build -o docker-gs-ping
+
+EXPOSE 8080
+
+CMD ["./docker-gs-ping"]
