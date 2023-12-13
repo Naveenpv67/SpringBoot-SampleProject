@@ -1,9 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.19
-
-# Copy CA certificates
-COPY --from=scratch /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+FROM golang:1.19 AS builder
 
 # Set destination for COPY
 WORKDIR /app
@@ -18,7 +15,16 @@ COPY . .
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -o docker-gs-ping
 
+FROM alpine:latest
+
+# Install CA certificates
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/docker-gs-ping .
+
 EXPOSE 8080
 
-# Run the application
 CMD ["./docker-gs-ping"]
