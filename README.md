@@ -15,10 +15,7 @@ COPY . .
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -o docker-gs-ping
 
-FROM alpine:latest
-
-# Install CA certificates
-RUN apk --no-cache add ca-certificates
+FROM gcr.io/distroless/base-debian10
 
 WORKDIR /app
 
