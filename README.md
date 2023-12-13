@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.19 AS builder
+FROM golang:1.19-alpine AS builder
 
 # Set destination for COPY
 WORKDIR /app
@@ -15,7 +15,7 @@ COPY . .
 # Build the Go application
 RUN CGO_ENABLED=0 GOOS=linux go build -o docker-gs-ping
 
-FROM gcr.io/distroless/base-debian10
+FROM alpine:latest
 
 WORKDIR /app
 
