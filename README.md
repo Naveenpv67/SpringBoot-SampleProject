@@ -2,10 +2,8 @@
 
 FROM golang:1.19
 
-# Add CA certificates
-RUN apt-get update && \
-    apt-get install -y ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+# Copy CA certificates
+COPY --from=scratch /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Set destination for COPY
 WORKDIR /app
