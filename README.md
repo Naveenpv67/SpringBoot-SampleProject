@@ -1,61 +1,26 @@
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Mono;
+# syntax=docker/dockerfile:1
 
-import java.time.Duration;
+FROM golang:1.19
 
-@Controller
-@RequestMapping("/api")
-public class YourController {
+# Add CA certificates
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
-    private static final Logger log = LoggerFactory.getLogger(YourController.class);
+# Set destination for COPY
+WORKDIR /app
 
-    @Autowired
-    private WebClient obpWebClient;
+# Download Go modules
+COPY go.mod go.sum ./
+RUN go mod download
 
-    @PostMapping("/yourEndpoint")
-    @ResponseBody
-    public ResponseEntity<String> postData(@RequestBody YourRequestBodyClass requestBody) {
-        String mainResponse;
+# Copy the rest of the application code
+COPY . .
 
-        try {
-            mainResponse = webClientPost(requestBody);
-            return ResponseEntity.ok(mainResponse);
-        } catch (ResponseStatusException e) {
-            log.error("Error making OBP API call: ", e);
-            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
-        }
-    }
+# Build the Go application
+RUN CGO_ENABLED=0 GOOS=linux go build -o docker-gs-ping
 
-    private String webClientPost(YourRequestBodyClass requestBody) {
-        return obpWebClient.post()
-                .uri("/yourPostEndpoint") // Adjust the endpoint accordingly
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(requestBody))
-                .retrieve()
-                .onStatus(
-                        HttpStatusCode::isError,
-                        clientResponse -> clientResponse.bodyToMono(String.class)
-                                .flatMap(errorResponseBody -> Mono.error(new ResponseStatusException(clientResponse.statusCode(), errorResponseBody)))
-                )
-                .bodyToMono(String.class)
-                .doOnSuccess(response -> log.info("Successful response from OBP: {}", response))
-                .doOnError(ResponseStatusException.class, error -> {
-                    log.error("OBP response error: ", error);
-                    throw error;
-                })
-                .block(Duration.ofSeconds(60));
-    }
-}
+EXPOSE 8080
+
+# Run the application
+CMD ["./docker-gs-ping"]
