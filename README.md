@@ -1,27 +1,19 @@
-# syntax=docker/dockerfile:1
+package main
 
-FROM golang:1.19-alpine AS builder
+import (
+    "fmt"
+    "net/http"
+)
 
-# Set destination for COPY
-WORKDIR /app
+func main() {
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintf(w, "Hello, Docker!")
+    })
 
-# Download Go modules
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy the rest of the application code
-COPY . .
-
-# Build the Go application
-RUN CGO_ENABLED=0 GOOS=linux go build -o docker-gs-ping
-
-FROM alpine:latest
-
-WORKDIR /app
-
-# Copy the binary from the builder stage
-COPY --from=builder /app/docker-gs-ping .
-
-EXPOSE 8080
-
-CMD ["./docker-gs-ping"]
+    port := 8080
+    fmt.Printf("Starting server on :%d...\n", port)
+    err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+    if err != nil {
+        fmt.Printf("Error: %s\n", err)
+    }
+}
