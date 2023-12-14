@@ -42,12 +42,9 @@ public class AerospikeConfig {
         settings.setNamespace(namespace);
         return settings;
     }
+
+    @Bean
+    public ClientPolicy aerospikeClientPolicy(AerospikeClient aerospikeClient) {
+        return aerospikeClient.getClientPolicy();
+    }
 }
-
-
-# application.properties
-spring.data.aerospike.hosts=localhost:3000
-spring.data.aerospike.username=myUsername
-spring.data.aerospike.password=myPassword
-spring.data.aerospike.namespace=myNamespace
-
