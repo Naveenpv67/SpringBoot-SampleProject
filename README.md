@@ -1,13 +1,13 @@
 import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.policy.ClientPolicy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.aerospike.config.AerospikeDataSettings;
-import org.springframework.data.aerospike.core.AerospikeTemplate;
+import org.springframework.stereotype.Service;
 
-@Configuration
-public class AerospikeConfig {
+import java.io.File;
+import java.util.Map;
+
+@Service
+public class AerospikeInfoService {
 
     @Value("${spring.data.aerospike.hosts}")
     private String hosts;
@@ -18,33 +18,51 @@ public class AerospikeConfig {
     @Value("${spring.data.aerospike.password}")
     private String password;
 
-    @Value("${spring.data.aerospike.namespace}")
-    private String namespace;
+    @Value("${export.directory}")
+    private String exportDirectory;
 
-    @Bean
-    public AerospikeTemplate aerospikeTemplate(AerospikeClient aerospikeClient,
-                                               AerospikeDataSettings aerospikeDataSettings) {
-        return new AerospikeTemplate(aerospikeClient, aerospikeDataSettings.getNamespace());
-    }
-
-    @Bean
-    public AerospikeClient aerospikeClient(AerospikeDataSettings aerospikeDataSettings) {
+    public void exportSetsAndIndexes(String namespace) {
         ClientPolicy clientPolicy = new ClientPolicy();
         clientPolicy.user = username;
         clientPolicy.password = password;
 
-        return new AerospikeClient(clientPolicy, hosts);
-    }
+        try (AerospikeClient client = new AerospikeClient(clientPolicy, hosts.split(":")[0], Integer.parseInt(hosts.split(":")[1]))) {
+            String setsInfo = Info.request(client.queryPolicyDefault, hosts, "sets");
+            String indexesInfo = Info.request(client.queryPolicyDefault, hosts, "sindex");
 
-    @Bean
-    public AerospikeDataSettings aerospikeDataSettings() {
-        AerospikeDataSettings settings = new AerospikeDataSettings();
-        settings.setNamespace(namespace);
-        return settings;
-    }
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, String> result = Map.of("setsInfo", setsInfo, "indexesInfo", indexesInfo);
 
-    @Bean
-    public ClientPolicy aerospikeClientPolicy(AerospikeClient aerospikeClient) {
-        return aerospikeClient.getClientPolicy();
+            // Write to JSON file
+            String jsonFileName = exportDirectory + File.separator + "exported_data.json";
+            objectMapper.writeValue(new File(jsonFileName), result);
+        } catch (Exception e) {
+            throw new RuntimeException("Error exporting sets and indexes information from Aerospike.", e);
+        }
     }
 }
+
+
+
+export.directory=/path/to/export
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/export")
+public class ExportController {
+
+    @Autowired
+    private AerospikeInfoService aerospikeInfoService;
+
+    @GetMapping("/{namespace}")
+    public void exportSetsAndIndexes(@PathVariable String namespace) {
+        aerospikeInfoService.exportSetsAndIndexes(namespace);
+    }
+}
+
