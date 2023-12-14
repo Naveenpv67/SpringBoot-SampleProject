@@ -1,2 +1,2 @@
-String setsInfo = Info.request(client, null, "sets", namespace);
-String indexesInfo = Info.request(client, null, "sindex", namespace);
+String setsInfo = Info.request(client.queryPolicyDefault, client.getNodes()[0], "sets");
+String indexesInfo = Info.request(client.queryPolicyDefault, client.getNodes()[0], "sindex");
