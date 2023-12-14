@@ -1,41 +1,53 @@
 import com.aerospike.client.AerospikeClient;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.aerospike.client.policy.ClientPolicy;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.aerospike.config.AerospikeDataSettings;
+import org.springframework.data.aerospike.core.AerospikeTemplate;
 
-import java.io.File;
-import java.io.IOException;
+@Configuration
+public class AerospikeConfig {
 
-@Service
-public class ExportService {
+    @Value("${spring.data.aerospike.hosts}")
+    private String hosts;
 
-    @Autowired
-    private AerospikeClient aerospikeClient;
+    @Value("${spring.data.aerospike.username}")
+    private String username;
 
-    @Value("${aerospike.backup.directory}")
-    private String backupDirectory;
+    @Value("${spring.data.aerospike.password}")
+    private String password;
 
-    public void exportNamespace(String namespace) {
-        String outputFile = backupDirectory + File.separator + "exported_" + namespace + ".asb";
-        String[] command = {
-                "asbackup",
-                "--host", aerospikeClient.getClientPolicy().hosts[0].name,
-                "--port", String.valueOf(aerospikeClient.getClientPolicy().hosts[0].port),
-                "--namespace", namespace,
-                "--output-file", outputFile
-        };
+    @Value("${spring.data.aerospike.namespace}")
+    private String namespace;
 
-        try {
-            Process process = new ProcessBuilder(command).start();
-            int exitCode = process.waitFor();
+    @Bean
+    public AerospikeTemplate aerospikeTemplate(AerospikeClient aerospikeClient,
+                                               AerospikeDataSettings aerospikeDataSettings) {
+        return new AerospikeTemplate(aerospikeClient, aerospikeDataSettings.getNamespace());
+    }
 
-            if (exitCode == 0) {
-                System.out.println("Namespace exported successfully to file: " + outputFile);
-            } else {
-                System.err.println("Error exporting namespace. Exit code: " + exitCode);
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
+    @Bean
+    public AerospikeClient aerospikeClient(AerospikeDataSettings aerospikeDataSettings) {
+        ClientPolicy clientPolicy = new ClientPolicy();
+        clientPolicy.user = username;
+        clientPolicy.password = password;
+
+        return new AerospikeClient(clientPolicy, hosts);
+    }
+
+    @Bean
+    public AerospikeDataSettings aerospikeDataSettings() {
+        AerospikeDataSettings settings = new AerospikeDataSettings();
+        settings.setNamespace(namespace);
+        return settings;
     }
 }
+
+
+# application.properties
+spring.data.aerospike.hosts=localhost:3000
+spring.data.aerospike.username=myUsername
+spring.data.aerospike.password=myPassword
+spring.data.aerospike.namespace=myNamespace
+
