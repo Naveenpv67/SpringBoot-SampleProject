@@ -1,9 +1,18 @@
-// Fetch the set names for the given namespace using Info.request
-String response = Info.request(client.getNodes()[0], "sets");
-List<String> setNames = new ArrayList<>();
+while (recordSet.next()) {
+    Map<String, Object> data = new HashMap<>();
 
-String[] setsInfo = response.split(";");
-for (String setInfo : setsInfo) {
-    String setName = setInfo.split(":")[0].trim();
-    setNames.add(setName);
+    Key key = recordSet.getKey();
+    if (key != null && key.userKey != null) {
+        data.put("key", key.userKey.getObject());
+    }
+
+    data.put("set_name", setName);
+
+    Record record = recordSet.getRecord();
+    if (record != null) {
+        Map<String, Object> bins = record.bins;
+        data.putAll(bins);
+    }
+
+    result.add(data);
 }
