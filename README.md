@@ -1,5 +1,6 @@
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.AerospikeException;
+import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
 import com.aerospike.client.policy.ClientPolicy;
 import com.aerospike.client.policy.Policy;
@@ -27,21 +28,33 @@ public class AerospikeController {
 
             List<Map<String, Object>> result = new ArrayList<>();
 
-            // Set up a query statement to retrieve all records in the namespace
-            Statement statement = new Statement();
-            statement.setNamespace(namespace);
+            // Fetch the set names for the given namespace
+            String[] setNames = client.getSets(clientPolicy, namespace);
 
-            // Configure the policy to include bin data
-            Policy policy = new Policy();
-            policy.includeBinData = true;
+            // Iterate through each set
+            for (String setName : setNames) {
+                Statement statement = new Statement();
+                statement.setNamespace(namespace);
+                statement.setSetName(setName);
 
-            // Execute the query and process the results
-            RecordSet recordSet = client.query(policy, statement);
-            while (recordSet.next()) {
-                Map<String, Object> data = recordSet.getMap();
-                result.add(data);
+                // Fetch all records (bins) in the set
+                RecordSet recordSet = client.query(clientPolicy, statement);
+                while (recordSet.next()) {
+                    Map<String, Object> data = new HashMap<>();
+                    Key key = recordSet.getKey();
+                    data.put("set_name", setName);
+                    data.put("key", key.userKey.getObject());
+                    
+                    // Fetch all bins in the record
+                    Bin[] bins = recordSet.getRecord().bins;
+                    for (Bin bin : bins) {
+                        data.put(bin.name, bin.value.getObject());
+                    }
+
+                    result.add(data);
+                }
+                recordSet.close();
             }
-            recordSet.close();
 
             client.close();
 
