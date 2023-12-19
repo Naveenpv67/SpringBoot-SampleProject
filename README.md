@@ -23,7 +23,11 @@ public class AerospikeConfig {
             clientPolicy.user = aerospikeUsername;
             clientPolicy.password = aerospikePassword;
 
-            return new AerospikeClient(clientPolicy, aerospikeHosts);
+            String[] hostPort = aerospikeHosts.split(":");
+            String aerospikeHost = hostPort[0];
+            int aerospikePort = Integer.parseInt(hostPort[1]);
+
+            return new AerospikeClient(clientPolicy, aerospikeHost, aerospikePort);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize AerospikeClient", e);
         }
