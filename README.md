@@ -9,7 +9,7 @@ while (recordSet.next()) {
     data.put("set_name", setName);
 
     Record record = recordSet.getRecord();
-    if (record != null) {
+    if (record != null && record.bins != null) {
         Map<String, Object> bins = record.bins;
         data.putAll(bins);
     }
