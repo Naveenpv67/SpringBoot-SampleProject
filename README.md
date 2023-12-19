@@ -2,8 +2,8 @@ import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
+import com.aerospike.client.Record;
 import com.aerospike.client.policy.ClientPolicy;
-import com.aerospike.client.policy.Policy;
 import com.aerospike.client.query.RecordSet;
 import com.aerospike.client.query.Statement;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,16 +20,19 @@ import java.util.Map;
 @RequestMapping("/api")
 public class AerospikeController {
 
-    @GetMapping("/getSetsAndBins")
-    public List<Map<String, Object>> getSetsAndBins(@RequestParam String namespace) {
+    @GetMapping("/getAllSetData")
+    public List<Map<String, Object>> getAllSetData(@RequestParam String namespace) {
         try {
             ClientPolicy clientPolicy = new ClientPolicy();
             AerospikeClient client = new AerospikeClient(clientPolicy, "10.216.34.32", 3000);
 
             List<Map<String, Object>> result = new ArrayList<>();
 
-            // Fetch the set names for the given namespace
-            String[] setNames = client.getSets(clientPolicy, namespace);
+            // Fetch the set names for the given namespace using Info.request
+            String response = Info.request(client.getNodes()[0], "sets");
+            List<String> setNames = Arrays.stream(response.split(";"))
+                    .map(setInfo -> setInfo.split(":")[0].trim())
+                    .collect(Collectors.toList());
 
             // Iterate through each set
             for (String setName : setNames) {
