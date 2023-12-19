@@ -18,10 +18,14 @@ public class AerospikeConfig {
 
     @Bean(destroyMethod = "close")
     public AerospikeClient aerospikeClient() {
-        ClientPolicy clientPolicy = new ClientPolicy();
-        clientPolicy.user = aerospikeUsername;
-        clientPolicy.password = aerospikePassword;
+        try {
+            ClientPolicy clientPolicy = new ClientPolicy();
+            clientPolicy.user = aerospikeUsername;
+            clientPolicy.password = aerospikePassword;
 
-        return new AerospikeClient(clientPolicy, aerospikeHosts);
+            return new AerospikeClient(clientPolicy, aerospikeHosts);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize AerospikeClient", e);
+        }
     }
 }
