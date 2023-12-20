@@ -1,1 +1,1 @@
-REMOVE FROM <namespace>.<set> WHERE <index_name> = <value>
+REMOVE FROM test.mySet WHERE myIndex = 'desiredValue'
