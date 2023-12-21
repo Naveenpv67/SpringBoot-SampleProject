@@ -25,9 +25,9 @@ public class AerospikeService {
             Key key = recordSet.getKey();
             Record record = aerospikeClient.get(null, key);
 
-            // Convert each record to a map
-            Map<String, Object> recordMap = new HashMap<>();
-            recordMap.put("primaryKey", key.userKey.getObject());
+            // Convert each record to a map with a linked map to maintain order
+            Map<String, Object> recordMap = new LinkedHashMap<>();
+            recordMap.put("PK", key.userKey.getObject());
 
             // Iterate over all bins and add them to the map
             for (Map.Entry<String, Object> binEntry : record.bins.entrySet()) {
