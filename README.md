@@ -1,13 +1,13 @@
 import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AerospikeService {
@@ -15,39 +15,29 @@ public class AerospikeService {
     @Autowired
     private AerospikeClient aerospikeClient;
 
-    public List<String> getRecords(String namespace, String set) {
-        List<String> jsonRecords = new ArrayList<>();
+    public List<Map<String, Object>> getRecords(String namespace, String set) {
+        List<Map<String, Object>> recordsList = new ArrayList<>();
 
         RecordSet recordSet = aerospikeClient.query(null,
-                new Statement().setNamespace(namespace).setSetName(set).setBinNames("field1"));
+                new Statement().setNamespace(namespace).setSetName(set));
 
         while (recordSet.next()) {
             Key key = recordSet.getKey();
             Record record = aerospikeClient.get(null, key);
-            // Create a map to represent the record
+
+            // Convert each record to a map
             Map<String, Object> recordMap = new HashMap<>();
             recordMap.put("primaryKey", key.userKey.getObject());
-            recordMap.put("field1", record.getString("field1"));
-            // Add other fields as needed
 
-            // Convert map to JSON string
-            String jsonString = convertMapToJson(recordMap);
-            
-            // Add the JSON string to the list
-            jsonRecords.add(jsonString);
+            // Iterate over all bins and add them to the map
+            for (Map.Entry<String, Object> binEntry : record.bins.entrySet()) {
+                recordMap.put(binEntry.getKey(), binEntry.getValue());
+            }
+
+            // Add the record map to the list
+            recordsList.add(recordMap);
         }
 
-        return jsonRecords;
-    }
-
-    private String convertMapToJson(Map<String, Object> map) {
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.writeValueAsString(map);
-        } catch (JsonProcessingException e) {
-            // Handle exception (e.g., log it or throw a custom exception)
-            e.printStackTrace();
-            return "{}"; // Return an empty JSON object if conversion fails
-        }
+        return recordsList;
     }
 }
