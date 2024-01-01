@@ -1,33 +1,34 @@
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+// filterDebitCards applies a filter based on the channelId and additional conditions
+func filterDebitCards(cards []models.DebitCardDetails, channelId string) []models.DebitCardDetails {
+    var filteredList []models.DebitCardDetails
 
-import com.aerospike.client.Record;
-import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Bin;
-import com.aerospike.client.Key;
-import com.aerospike.client.policy.ClientPolicy;
-
-@RestController
-@RequestMapping("/api")
-public class DataController {
-
-    @Autowired
-    private AerospikeClient aerospikeClient; // Make sure you have this bean configured in your application
-
-    @GetMapping("/fetchData/{set}/{primaryKey}")
-    public String fetchData(@PathVariable String set, @PathVariable String primaryKey) {
-        Key key = new Key("namespace", set, primaryKey);
-        Record record = aerospikeClient.get(null, key);
-
-        if (record != null) {
-            // Assuming 'data' is the name of the bin you want to fetch
-            Object data = record.getValue("data");
-            return "Data retrieved: " + data.toString();
-        } else {
-            return "No data found for the given primary key.";
+    for _, card := range cards {
+        if card.PrimaryAccount == "50100114641926" && channelId == "BB55" {
+            // Apply additional conditions or logic if needed
+            filteredList = append(filteredList, card)
         }
     }
+
+    return filteredList
+}
+
+// GetDCDetails is your controller function
+func (c Controller) GetDCDetails(rw http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    var (
+        req      models.DCDetailsInp
+        err      error
+        response models.DCDetailsResp
+    )
+
+    channelId := os.Getenv("CHANNEL_ID")
+
+    // Assume you have obtained the list of cards in some way and stored it in the 'cards' variable
+
+    // Call the filterDebitCards function
+    filteredList := filterDebitCards(cards, channelId)
+
+    // Continue with the remaining code using the filteredList
+    // ...
 }
