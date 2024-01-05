@@ -8,29 +8,38 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @RestController
 @RequestMapping("/api/data")
 public class DataController {
 
     private final AerospikeClient aerospikeClient; // Initialize this with your Aerospike client instance
 
-    public DataController(AerospikeClient aerospikeClient) {
+    private final ObjectMapper objectMapper;
+
+    public DataController(AerospikeClient aerospikeClient, ObjectMapper objectMapper) {
         this.aerospikeClient = aerospikeClient;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/insert")
-    public ResponseEntity<String> insertData(@RequestBody YourDataClass jsonData) {
+    public ResponseEntity<String> insertData(@RequestBody String jsonData) {
         try {
+            // Convert the JSON string to a Map
+            @SuppressWarnings("unchecked")
+            Map<String, Object> dataMap = objectMapper.readValue(jsonData, Map.class);
+
             // Set your namespace, set name, and primary key
             String namespace = "your_namespace";
             String setName = "your_set_name";
-            String primaryKey = jsonData.getPK(); // Replace with the actual method to get your primary key
+            String primaryKey = (String) dataMap.get("PK"); // Replace with the actual key in your data
 
             // Create a key using namespace, set name, and primary key
             Key key = new Key(namespace, setName, primaryKey);
 
-            // Iterate through your JSON data and create bins dynamically
-            jsonData.getData().forEach((key, value) -> {
+            // Iterate through the data map and create bins dynamically
+            dataMap.forEach((key, value) -> {
                 Bin bin = new Bin(key, value);
                 aerospikeClient.put(null, key, bin);
             });
