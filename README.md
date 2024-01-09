@@ -1,10 +1,12 @@
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
-import org.springframework.web.reactive.function.server.RouterFunctions;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -26,32 +28,16 @@ public class GatewayConfig {
     }
 }
 
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-
 @Component
-public class CustomLoggingFilter extends AbstractGatewayFilterFactory<CustomLoggingFilter.Config> {
-
-    public CustomLoggingFilter() {
-        super(Config.class);
-    }
-
+class CustomLoggingFilter implements GlobalFilter {
     @Override
-    public GatewayFilter apply(Config config) {
-        return (exchange, chain) -> {
-            // Custom logic for pre-processing request
-            System.out.println("Request Body: " + exchange.getRequest().getBody());
+    public Mono<Void> filter(ServerRequest request, ServerResponse response, GatewayFilterChain chain) {
+        // Custom logic for pre-processing request
+        System.out.println("Request Body: " + request.bodyToMono(String.class).block());
 
-            return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-                // Custom logic for post-processing response
-                System.out.println("Response Body: " + exchange.getResponse().getBody());
-            }));
-        };
-    }
-
-    public static class Config {
-        // Configuration properties can be added here if needed
+        return chain.filter(request).then(Mono.fromRunnable(() -> {
+            // Custom logic for post-processing response
+            System.out.println("Response Body: " + response.bodyToMono(String.class).block());
+        }));
     }
 }
