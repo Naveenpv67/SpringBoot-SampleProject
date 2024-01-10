@@ -3,7 +3,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
@@ -12,15 +14,30 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 
 @Component
-public class ModifyBodyGatewayFilter implements GatewayFilter {
+public class CustomFilter implements GatewayFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(ModifyBodyGatewayFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(CustomFilter.class);
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+
+        logRequestDetails(request);
+
+        return chain.filter(exchange).then(Mono.fromRunnable(() -> logResponseDetails(exchange)));
+    }
+
+    private void logRequestDetails(ServerHttpRequest request) {
+        logger.info("Request path: {}", request.getPath());
+        logger.info("Request method: {}", request.getMethod());
+        logger.info("Request headers: {}", request.getHeaders());
+        request.getBody().subscribe(body -> logger.info("Request body: {}", body.toString()));
+    }
+
+    private void logResponseDetails(ServerWebExchange exchange) {
         ServerHttpResponse originalResponse = exchange.getResponse();
 
-        // Modify the response body
+        // Decorate the response to log the body
         ServerHttpResponseDecorator responseDecorator = new ServerHttpResponseDecorator(originalResponse) {
             @Override
             public Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
@@ -36,6 +53,6 @@ public class ModifyBodyGatewayFilter implements GatewayFilter {
         };
 
         // Continue the filter chain with the decorated response
-        return chain.filter(exchange.mutate().response(responseDecorator).build());
+        exchange.mutate().response(responseDecorator).build();
     }
 }
