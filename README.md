@@ -1,66 +1,41 @@
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+public class EncryptionService {
 
-@RestController
-public class EncryptionController {
+    private static final String ENCRYPT_ENDPOINT = "https://dev2.mbv3.hdfcbank.com/crypter/encrypt";
+    private static final String DEVICE_ID_HEADER = "test125-naveen";
 
-    private static final String ALGORITHM = "AES";
-    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
-    private static final int GCM_TAG_LENGTH = 128;
-
-    @PostMapping("/encrypt")
-    public ResponseEntity<String> encrypt(@RequestBody EncryptionRequest encryptionRequest) {
-        try {
-            SecretKey secretKey = new SecretKeySpec(encryptionRequest.getSecretKey().getBytes(StandardCharsets.UTF_8), ALGORITHM);
-            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            byte[] iv = new byte[GCM_TAG_LENGTH / 8];
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-            byte[] ciphertext = cipher.doFinal(encryptionRequest.getPlaintext().getBytes(StandardCharsets.UTF_8));
-            String encryptedMessage = Base64.getEncoder().encodeToString(iv) + Base64.getEncoder().encodeToString(ciphertext);
-            return ResponseEntity.ok(encryptedMessage);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Encryption failed");
-        }
+    public Mono<String> encryptMessage(String devicePrKey, String serverPbKey, String body, String token, String tokenType, String salt) {
+        return WebClient.builder()
+                .baseUrl(ENCRYPT_ENDPOINT)
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .defaultHeader("Device-Id", DEVICE_ID_HEADER)
+                .build()
+                .post()
+                .uri("")
+                .body(BodyInserters.fromFormData("device_pr_key", devicePrKey)
+                        .with("server_pb_key", serverPbKey)
+                        .with("body", body)
+                        .with("token", token)
+                        .with("token_type", tokenType)
+                        .with("salt", salt))
+                .retrieve()
+                .bodyToMono(String.class);
     }
 
-    @PostMapping("/decrypt")
-    public ResponseEntity<String> decrypt(@RequestBody EncryptionRequest encryptionRequest) {
-        try {
-            SecretKey secretKey = new SecretKeySpec(encryptionRequest.getSecretKey().getBytes(StandardCharsets.UTF_8), ALGORITHM);
-            Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-
-            // Extract IV and ciphertext from the combined string
-            String combined = new String(Base64.getDecoder().decode(encryptionRequest.getEncryptedMessage()), StandardCharsets.UTF_8);
-            byte[] iv = Base64.getDecoder().decode(combined.substring(0, GCM_TAG_LENGTH / 8));
-            byte[] ciphertext = Base64.getDecoder().decode(combined.substring(GCM_TAG_LENGTH / 8));
-
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
-            byte[] decryptedBytes = cipher.doFinal(ciphertext);
-            String decryptedMessage = new String(decryptedBytes, StandardCharsets.UTF_8);
-            return ResponseEntity.ok(decryptedMessage);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Decryption failed");
-        }
+    // Example usage
+    public static void main(String[] args) {
+        EncryptionService encryptionService = new EncryptionService();
+        encryptionService.encryptMessage("PiPBMGEAINSISunTd4fW190A6cnQF¢NXqWOOJAQjZPY=""",
+                                        "MFkwEwYHKoZIzj0CAQYIKOZIzj0DAQcDQgAERLVueLA27Iboy22piEnvNduD3AIqDAeLlinJ5kbOUMclvRALz5+F6VZHZQhTLb5KMamh Lebte07p0==",
+                                        "{\"hashUserId\":\"d9c56347799146784812c67546ac9895.1a2dbc56ca5ec2448fcflff60fd038SA",
+                                        "sessionDetails Resp.SessionToken",
+                                        "LI",
+                                        "cydkUd4nyjpBaJWofnZ6")
+                .subscribe(System.out::println);
     }
-}
-
-
-
-public class EncryptionRequest {
-    private String secretKey;
-    private String plaintext;
-    private String encryptedMessage;
-
-    // Getters and setters
 }
