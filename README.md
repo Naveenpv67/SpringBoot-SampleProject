@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class EncryptionDecryptionExample {
+public class EncryptionService {
 
     public static String encryptAES256(String secret, String data) throws Exception {
         byte[] rawSecret = Base64.getDecoder().decode(secret);
@@ -16,9 +16,7 @@ public class EncryptionDecryptionExample {
             throw new IllegalArgumentException("Secret is not 32 bytes");
         }
 
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        keyGenerator.init(256, new SecureRandom(rawSecret));
-        SecretKey secretKey = keyGenerator.generateKey();
+        SecretKey secretKey = new javax.crypto.spec.SecretKeySpec(rawSecret, "AES");
 
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         byte[] nonce = new byte[cipher.getBlockSize()];
