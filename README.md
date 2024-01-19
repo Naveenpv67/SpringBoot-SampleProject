@@ -1,20 +1,11 @@
 import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
 import com.aerospike.client.policy.Policy;
-import com.aerospike.client.query.Filter;
-import com.aerospike.client.query.KeyQualifier;
-import com.aerospike.client.query.RecordSet;
-import com.aerospike.client.query.Statement;
-import com.aerospike.client.task.RegisterTask;
-
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class AerospikeService {
 
-    private AerospikeClient aerospikeClient;
+    private final AerospikeClient aerospikeClient;
 
     public AerospikeService(AerospikeClient aerospikeClient) {
         this.aerospikeClient = aerospikeClient;
