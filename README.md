@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class EncryptionService {
+public class EncryptionDecryptionExample {
 
     public static String encryptAES256(String secret, String data) throws Exception {
         byte[] rawSecret = Base64.getDecoder().decode(secret);
@@ -37,15 +37,47 @@ public class EncryptionService {
         return Base64.getEncoder().encodeToString(result);
     }
 
+    public static String decryptAES256(String secret, String encryptedData) throws Exception {
+        byte[] rawSecret = Base64.getDecoder().decode(secret);
+        byte[] encryptedBytes = Base64.getDecoder().decode(encryptedData);
+
+        if (rawSecret.length != 32) {
+            throw new IllegalArgumentException("Secret is not 32 bytes");
+        }
+
+        // Extract nonce from the encrypted data
+        int nonceSize = 12; // GCM nonce size
+        byte[] nonce = new byte[nonceSize];
+        System.arraycopy(encryptedBytes, 0, nonce, 0, nonceSize);
+
+        // Extract encrypted message
+        byte[] encryptedMessage = new byte[encryptedBytes.length - nonceSize];
+        System.arraycopy(encryptedBytes, nonceSize, encryptedMessage, 0, encryptedMessage.length);
+
+        SecretKey secretKey = new javax.crypto.spec.SecretKeySpec(rawSecret, "AES");
+
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        GCMParameterSpec parameterSpec = new GCMParameterSpec(128, nonce);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
+
+        byte[] decryptedBytes = cipher.doFinal(encryptedMessage);
+
+        return new String(decryptedBytes, StandardCharsets.UTF_8);
+    }
+
     public static void main(String[] args) {
         try {
-            String secretKey = "yourBase64EncodedSecretKey";
+            String secretKey = Base64.getEncoder().encodeToString("YourSecretKey".getBytes(StandardCharsets.UTF_8));
             String dataToEncrypt = "Hello, this is a test message.";
 
+            // Encryption
             String encryptedMessage = encryptAES256(secretKey, dataToEncrypt);
             System.out.println("Encrypted Message: " + encryptedMessage);
 
-            // Add decryption logic in Go service using the same secretKey
+            // Decryption
+            String decryptedMessage = decryptAES256(secretKey, encryptedMessage);
+            System.out.println("Decrypted Message: " + decryptedMessage);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
