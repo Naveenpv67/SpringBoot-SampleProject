@@ -1,43 +1,59 @@
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.web.server.ServerWebExchange;
+import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.Bin;
+import com.aerospike.client.Key;
+import com.aerospike.client.Record;
+import com.aerospike.client.policy.Policy;
+import com.aerospike.client.query.Filter;
+import com.aerospike.client.query.KeyQualifier;
+import com.aerospike.client.query.RecordSet;
+import com.aerospike.client.query.Statement;
+import com.aerospike.client.task.RegisterTask;
 
-@Configuration
-public class GatewayConfig {
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-    private String salt;
-    private String serverPubKey;
+public class AerospikeService {
 
-    public String extractResponse(ServerWebExchange exchange, String outData) {
-        ServerHttpRequest request = exchange.getRequest();
-        ObjectMapper objectMapper = new ObjectMapper();
+    private AerospikeClient aerospikeClient;
 
-        try {
-            // Parse the JSON response
-            JsonNode jsonNode = objectMapper.readTree(outData);
+    public AerospikeService(AerospikeClient aerospikeClient) {
+        this.aerospikeClient = aerospikeClient;
+    }
 
-            // Extract values from the response
-            JsonNode bodyNode = jsonNode.path("body");
-            if (bodyNode.isObject()) {
-                serverPubKey = bodyNode.path("serverPubKey").asText();
-                salt = bodyNode.path("salt").asText();
-            }
+    public String getSymmetricKeyForDeviceID(String deviceID) {
+        Key key = new Key("namespace", "EncrChanKeys", deviceID);
+        Record record = aerospikeClient.get(new Policy(), key, "SymmetricKey", "SymmetricKeyExpiresAt");
 
-        } catch (Exception e) {
-            // Handle exceptions as needed
-            e.printStackTrace();
+        if (record == null || record.bins.isEmpty()) {
+            // Handle case where record is not found
+            return null;
         }
 
-        return outData;
+        String symmetricKey = record.getString("SymmetricKey");
+        long expiresAtMillis = record.getLong("SymmetricKeyExpiresAt");
+
+        // Validate symmetric key expiration
+        if (System.currentTimeMillis() > expiresAtMillis) {
+            // Handle case where symmetric key is expired
+            return null;
+        }
+
+        return symmetricKey;
     }
 
-    // Getter methods for accessing the values from other parts of your application
-    public String getSalt() {
-        return salt;
-    }
+    public static void main(String[] args) {
+        // Assuming you have an initialized AerospikeClient instance
+        AerospikeClient aerospikeClient = new AerospikeClient("localhost", 3000);
 
-    public String getServerPubKey() {
-        return serverPubKey;
+        AerospikeService aerospikeService = new AerospikeService(aerospikeClient);
+
+        String deviceID = "yourDeviceID";
+        String symmetricKey = aerospikeService.getSymmetricKeyForDeviceID(deviceID);
+
+        if (symmetricKey != null) {
+            System.out.println("Symmetric Key: " + symmetricKey);
+        } else {
+            System.out.println("Symmetric Key not found or expired.");
+        }
     }
 }
