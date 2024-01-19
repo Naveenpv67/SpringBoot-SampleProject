@@ -1,50 +1,53 @@
-import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Key;
-import com.aerospike.client.Record;
-import com.aerospike.client.policy.Policy;
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
 
-public class AerospikeService {
+public class EncryptionService {
 
-    private final AerospikeClient aerospikeClient;
+    public static String encryptAES256(String secret, String data) throws Exception {
+        byte[] rawSecret = Base64.getDecoder().decode(secret);
+        byte[] rawData = data.getBytes(StandardCharsets.UTF_8);
 
-    public AerospikeService(AerospikeClient aerospikeClient) {
-        this.aerospikeClient = aerospikeClient;
-    }
-
-    public String getSymmetricKeyForDeviceID(String deviceID) {
-        Key key = new Key("namespace", "EncrChanKeys", deviceID);
-        Record record = aerospikeClient.get(new Policy(), key, "SymmetricKey", "SymmetricKeyExpiresAt");
-
-        if (record == null || record.bins.isEmpty()) {
-            // Handle case where record is not found
-            return null;
+        if (rawSecret.length != 32) {
+            throw new IllegalArgumentException("Secret is not 32 bytes");
         }
 
-        String symmetricKey = record.getString("SymmetricKey");
-        long expiresAtMillis = record.getLong("SymmetricKeyExpiresAt");
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(256, new SecureRandom(rawSecret));
+        SecretKey secretKey = keyGenerator.generateKey();
 
-        // Validate symmetric key expiration
-        if (System.currentTimeMillis() > expiresAtMillis) {
-            // Handle case where symmetric key is expired
-            return null;
-        }
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        byte[] nonce = new byte[cipher.getBlockSize()];
+        SecureRandom.getInstanceStrong().nextBytes(nonce);
 
-        return symmetricKey;
+        GCMParameterSpec parameterSpec = new GCMParameterSpec(128, nonce);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec);
+
+        byte[] encryptedData = cipher.doFinal(rawData);
+
+        // Combine nonce and encrypted data for transport
+        byte[] result = new byte[nonce.length + encryptedData.length];
+        System.arraycopy(nonce, 0, result, 0, nonce.length);
+        System.arraycopy(encryptedData, 0, result, nonce.length, encryptedData.length);
+
+        return Base64.getEncoder().encodeToString(result);
     }
 
     public static void main(String[] args) {
-        // Assuming you have an initialized AerospikeClient instance
-        AerospikeClient aerospikeClient = new AerospikeClient("localhost", 3000);
+        try {
+            String secretKey = "yourBase64EncodedSecretKey";
+            String dataToEncrypt = "Hello, this is a test message.";
 
-        AerospikeService aerospikeService = new AerospikeService(aerospikeClient);
+            String encryptedMessage = encryptAES256(secretKey, dataToEncrypt);
+            System.out.println("Encrypted Message: " + encryptedMessage);
 
-        String deviceID = "yourDeviceID";
-        String symmetricKey = aerospikeService.getSymmetricKeyForDeviceID(deviceID);
-
-        if (symmetricKey != null) {
-            System.out.println("Symmetric Key: " + symmetricKey);
-        } else {
-            System.out.println("Symmetric Key not found or expired.");
+            // Add decryption logic in Go service using the same secretKey
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
