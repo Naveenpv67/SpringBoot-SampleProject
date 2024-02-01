@@ -1,97 +1,35 @@
-Aerospike Database Backup and Restore in Docker
-Backup Steps:
-Create Backup Directory:
+import java.lang.reflect.Field;
 
-bash
-Copy code
-docker exec -it <containerId> /bin/bash
-mkdir backup
-Perform Backup:
+public class VariableNameExtractor {
 
-bash
-Copy code
-asbackup -n <namespace> -d backup
-This creates a namespace.asb file in the backup folder.
+    // Generic method to get the variable name of an object
+    public static String getVariableName(Object object) {
+        Field[] fields = object.getClass().getDeclaredFields();
 
-Copy Backup to Local Machine:
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                if (field.get(object) == object) {
+                    return field.getName();
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
 
-bash
-Copy code
-docker cp <containerId>:/backup ~/Desktop
-Restore Steps:
-Create Restore Directory Inside Container:
+        return null; // Return null if variable name not found
+    }
 
-bash
-Copy code
-docker exec -it <containerId> /bin/bash
-mkdir bckupFile
-Copy Backup File from Local Machine to Docker Container:
+    public static void main(String[] args) {
+        // Test the method with an example object
+        MyClass myObject = new MyClass();
+        String variableName = getVariableName(myObject);
 
-bash
-Copy code
-docker cp ~/Desktop/backup/namespace.asb <containerId>:/bckupFile
-Navigate to Docker Container:
+        System.out.println("Variable Name: " + variableName);
+    }
+}
 
-bash
-Copy code
-docker exec -it <containerId> /bin/bash
-Perform Restore:
-
-bash
-Copy code
-asrestore -n <namespace> -d bckupFile
-Replace <namespace> with the actual namespace name.
-
-
-Note: Ensure that the Aerospike container is running and replace placeholders such as <containerId> and <namespace> with your specific values.
-
-
-
-
-Aerospike Database Backup and Restore in Podman
-Backup Steps:
-Create Backup Directory:
-
-bash
-Copy code
-podman exec -it <containerId> /bin/bash
-mkdir backup
-Perform Backup:
-
-bash
-Copy code
-asbackup -n <namespace> -d backup
-This creates a namespace.asb file in the backup folder.
-
-Copy Backup to Local Machine:
-
-bash
-Copy code
-podman cp <containerId>:/backup ~/Desktop
-Restore Steps:
-Create Restore Directory Inside Container:
-
-bash
-Copy code
-podman exec -it <containerId> /bin/bash
-mkdir bckupFile
-Copy Backup File from Local Machine to Podman Container:
-
-bash
-Copy code
-podman cp ~/Desktop/backup/namespace.asb <containerId>:/bckupFile
-Navigate to Podman Container:
-
-bash
-Copy code
-podman exec -it <containerId> /bin/bash
-Perform Restore:
-
-bash
-Copy code
-asrestore -n <namespace> -d bckupFile
-Replace <namespace> with the actual namespace name.
-
-Note: Ensure that the Aerospike container managed by Podman is running, and replace placeholders such as <containerId> and <namespace> with your specific values.
-
-
+class MyClass {
+    // Example variable
+    private String exampleField;
+}
