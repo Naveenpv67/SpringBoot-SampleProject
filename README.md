@@ -8,14 +8,6 @@ import (
 	"net/http"
 )
 
-type RequestBody struct {
-	Data string `json:"data"`
-}
-
-type ResponseBody struct {
-	Message string `xml:"message"`
-}
-
 func main() {
 	http.HandleFunc("/step", StepHandler)
 	fmt.Println("Server listening on :8080")
@@ -30,16 +22,16 @@ func StepHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode JSON request body
-	var requestBody RequestBody
-	err = json.Unmarshal(body, &requestBody)
+	// Decode JSON request body to map
+	var jsonBody map[string]interface{}
+	err = json.Unmarshal(body, &jsonBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Convert JSON data to XML
-	xmlData, err := jsonToXML(requestBody.Data)
+	xmlData, err := jsonToXML(jsonBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,14 +52,8 @@ func StepHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonResult)
 }
 
-func jsonToXML(jsonData string) (string, error) {
-	var data map[string]interface{}
-	err := json.Unmarshal([]byte(jsonData), &data)
-	if err != nil {
-		return "", err
-	}
-
-	xmlData, err := xml.MarshalIndent(data, "", "  ")
+func jsonToXML(jsonData map[string]interface{}) (string, error) {
+	xmlData, err := xml.MarshalIndent(jsonData, "", "  ")
 	if err != nil {
 		return "", err
 	}
