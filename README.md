@@ -2,46 +2,96 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
-type Greeting struct {
-	Message string `json:"message"`
+type RequestBody struct {
+	Data string `json:"data"`
 }
 
-func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	// Decode JSON payload
-	var greeting Greeting
-	err := json.NewDecoder(r.Body).Decode(&greeting)
+type ResponseBody struct {
+	Message string `xml:"message"`
+}
+
+func main() {
+	http.HandleFunc("/step", StepHandler)
+	fmt.Println("Server listening on :8080")
+	http.ListenAndServe(":8080", nil)
+}
+
+func StepHandler(w http.ResponseWriter, r *http.Request) {
+	// Read the request body
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Decode JSON request body
+	var requestBody RequestBody
+	err = json.Unmarshal(body, &requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Perform any processing with the received data
-	responseMessage := fmt.Sprintf("Hello, %s!", greeting.Message)
-
-	// Prepare response
-	response := Greeting{
-		Message: responseMessage,
+	// Convert JSON data to XML
+	xmlData, err := jsonToXML(requestBody.Data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Encode and send the response
+	// Call sample function (replace this with your logic)
+	result := sampleFunction(xmlData)
+
+	// Convert XML result back to JSON
+	jsonResult, err := xmlToJSON(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Send JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.Write(jsonResult)
 }
 
-func main() {
-	// Create a new router
-	r := mux.NewRouter()
+func jsonToXML(jsonData string) (string, error) {
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		return "", err
+	}
 
-	// Define a route for the HelloWorldHandler with the POST method
-	r.HandleFunc("/hello", HelloWorldHandler).Methods("POST")
+	xmlData, err := xml.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return "", err
+	}
 
-	// Start the server on port 8080
-	fmt.Println("Server listening on :8080")
-	http.ListenAndServe(":8080", r)
+	return string(xmlData), nil
+}
+
+func xmlToJSON(xmlData string) ([]byte, error) {
+	var data map[string]interface{}
+	err := xml.Unmarshal([]byte(xmlData), &data)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonData, nil
+}
+
+func sampleFunction(xmlData string) string {
+	// Replace this with your actual logic
+	// This is just a sample function
+	return fmt.Sprintf("<message>%s processed</message>", xmlData)
 }
