@@ -1,51 +1,43 @@
 import java.io.*;
 import java.nio.file.*;
+import java.util.zip.*;
 
 private File processAndCopyToLocal(MultipartFile file, String localFolderPath) throws IOException {
-    // Create a temporary file
-    File tempFile = File.createTempFile("processed_", ".txt");
-    System.out.println("Temporary file path: " + tempFile.getAbsolutePath());
+    // Create a temporary folder
+    Path tempFolder = Files.createTempDirectory("temp_zip");
+    System.out.println("Temporary folder path: " + tempFolder.toAbsolutePath());
 
     try (InputStream zipInputStream = file.getInputStream();
-         ZipInputStream zipStream = new ZipInputStream(zipInputStream);
-         BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempFile))) {
+         ZipInputStream zipStream = new ZipInputStream(zipInputStream)) {
 
-        // Process and copy the content in chunks
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = zipStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
+        ZipEntry entry;
+        while ((entry = zipStream.getNextEntry()) != null) {
+            if (!entry.isDirectory()) {
+                // Process and copy the content in chunks
+                Path tempFile = tempFolder.resolve(entry.getName());
+                System.out.println("Extracting to temporary file: " + tempFile.toAbsolutePath());
+
+                try (BufferedOutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(tempFile))) {
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = zipStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+                }
+
+                System.out.println("Size of temporary file after processing: " + Files.size(tempFile) + " bytes");
+
+                // Move the processed file to the local folder
+                Path destinationPath = Path.of(localFolderPath, "processed_file.txt");
+                Files.move(tempFile, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+
+                System.out.println("Size of destination file: " + Files.size(destinationPath) + " bytes");
+
+                // Optional: Clean up the temporary folder
+                Files.deleteIfExists(tempFolder);
+            }
         }
-
-        System.out.println("Size of temporary file after processing: " + tempFile.length() + " bytes");
-    } catch (IOException e) {
-        System.err.println("Error during processing: " + e.getMessage());
-        throw e; // Re-throw the exception after logging
     }
 
-    // Copy the temporary file to the local folder in chunks
-    Path destinationPath = Path.of(localFolderPath, "processed_file.txt");
-    System.out.println("Destination path: " + destinationPath.toAbsolutePath());
-
-    try (InputStream inputStream = Files.newInputStream(tempFile.toPath());
-         BufferedOutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(destinationPath))) {
-
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
-        }
-
-        System.out.println("Size of destination file: " + Files.size(destinationPath) + " bytes");
-    } catch (IOException e) {
-        System.err.println("Error during copying to local folder: " + e.getMessage());
-        throw e; // Re-throw the exception after logging
-    }
-
-    // Optional: Clean up the temporary file
-    if (!Files.deleteIfExists(tempFile.toPath())) {
-        System.err.println("Failed to delete temporary file: " + tempFile.getAbsolutePath());
-    }
-
-    return tempFile;
+    return new File(localFolderPath, "processed_file.txt");
 }
