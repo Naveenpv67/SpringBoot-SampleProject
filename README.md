@@ -1,49 +1,45 @@
-@PutMapping("/update/{merchantId}")
-    public String updateMerchantDetails(
-            @PathVariable String merchantId,
-            @RequestParam(required = false) String brandName,
-            @RequestParam(required = false) String terminalId,
-            @RequestParam(required = false) List<String> services) {
+import org.springframework.stereotype.Service;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-        Map<String, Object> updatedDetails = new HashMap<>();
-        if (brandName != null) updatedDetails.put("brandName", brandName);
-        if (terminalId != null) updatedDetails.put("terminalId", terminalId);
-        if (services != null) updatedDetails.put("services", services);
+@Service
+public class MerchantService {
 
-        return merchantService.updateMerchantDetails(merchantId, updatedDetails);
-    }
+    private final List<Map<String, Object>> merchantServicesData = new ArrayList<>();
 
+    public String onboardMerchant(Map<String, Object> request) {
+        String brandName = (String) request.get("brandName");
 
-
-@DeleteMapping("/delete/{merchantId}")
-    public String deleteMerchant(@PathVariable String merchantId) {
-        return merchantService.deleteMerchant(merchantId);
-    }
-
-
-    public String deleteMerchant(String merchantId) {
-        Iterator<Map<String, Object>> iterator = merchantServicesData.iterator();
-        while (iterator.hasNext()) {
-            Map<String, Object> merchant = iterator.next();
-            if (merchant.get("merchantId").equals(merchantId)) {
-                iterator.remove();
-                return "Merchant deleted successfully";
-            }
+        // Check if the brandName already exists
+        if (isBrandNameExists(brandName)) {
+            return "Brand name already exists. Choose a different brand name.";
         }
-        return "Merchant not found for the given merchantId";
+
+        String merchantId = UUID.randomUUID().toString();
+
+        Map<String, Object> merchant = new HashMap<>();
+        merchant.put("merchantId", merchantId);
+        merchant.put("brandName", brandName);
+        merchant.put("terminalId", request.get("terminalId"));
+        merchant.put("services", request.get("services"));
+
+        merchantServicesData.add(merchant);
+        return "Success";
     }
 
-public String updateMerchantDetails(String merchantId, Map<String, Object> updatedDetails) {
+    private boolean isBrandNameExists(String brandName) {
         for (Map<String, Object> merchant : merchantServicesData) {
-            if (merchant.get("merchantId").equals(merchantId)) {
-                // Update the merchant details based on the keys provided in updatedDetails
-                merchant.putAll(updatedDetails);
-                return "Merchant details updated successfully";
+            String existingBrandName = (String) merchant.get("brandName");
+            if (existingBrandName != null && existingBrandName.equalsIgnoreCase(brandName)) {
+                return true; // Brand name already exists
             }
         }
-        return "Merchant not found for the given merchantId";
+        return false; // Brand name does not exist
     }
 
+    // Other methods...
 
-
-    
+}
