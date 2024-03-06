@@ -14,6 +14,25 @@
     }
 
 
+
+@DeleteMapping("/delete/{merchantId}")
+    public String deleteMerchant(@PathVariable String merchantId) {
+        return merchantService.deleteMerchant(merchantId);
+    }
+
+
+    public String deleteMerchant(String merchantId) {
+        Iterator<Map<String, Object>> iterator = merchantServicesData.iterator();
+        while (iterator.hasNext()) {
+            Map<String, Object> merchant = iterator.next();
+            if (merchant.get("merchantId").equals(merchantId)) {
+                iterator.remove();
+                return "Merchant deleted successfully";
+            }
+        }
+        return "Merchant not found for the given merchantId";
+    }
+
 public String updateMerchantDetails(String merchantId, Map<String, Object> updatedDetails) {
         for (Map<String, Object> merchant : merchantServicesData) {
             if (merchant.get("merchantId").equals(merchantId)) {
