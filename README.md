@@ -1,38 +1,30 @@
-import org.springframework.stereotype.Service;
+@PutMapping("/update/{merchantId}")
+    public String updateMerchantDetails(
+            @PathVariable String merchantId,
+            @RequestParam(required = false) String brandName,
+            @RequestParam(required = false) String terminalId,
+            @RequestParam(required = false) List<String> services) {
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+        Map<String, Object> updatedDetails = new HashMap<>();
+        if (brandName != null) updatedDetails.put("brandName", brandName);
+        if (terminalId != null) updatedDetails.put("terminalId", terminalId);
+        if (services != null) updatedDetails.put("services", services);
 
-@Service
-public class MerchantService {
-
-    private final List<Map<String, Object>> merchantServicesData = new ArrayList<>();
-
-    public String onboardMerchant(Map<String, Object> merchantDetails) {
-        String merchantId = UUID.randomUUID().toString();
-        Map<String, Object> merchant = new HashMap<>();
-        merchant.put("merchantId", merchantId);
-        merchant.putAll(merchantDetails);
-        merchantServicesData.add(merchant);
-        return "Success";
+        return merchantService.updateMerchantDetails(merchantId, updatedDetails);
     }
 
-    public List<Map<String, Object>> getMerchants() {
-        return new ArrayList<>(merchantServicesData);
-    }
 
-    public Map<String, Object> getMerchantDetails(String merchantId) {
+public String updateMerchantDetails(String merchantId, Map<String, Object> updatedDetails) {
         for (Map<String, Object> merchant : merchantServicesData) {
             if (merchant.get("merchantId").equals(merchantId)) {
-                // Found the merchant with the specified merchantId
-                return merchant;
+                // Update the merchant details based on the keys provided in updatedDetails
+                merchant.putAll(updatedDetails);
+                return "Merchant details updated successfully";
             }
         }
-        // If merchantId not found, return an empty map (you can handle this differently based on your requirements)
-        return new HashMap<>();
+        return "Merchant not found for the given merchantId";
     }
-}
 
+
+
+    
