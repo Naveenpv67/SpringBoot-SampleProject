@@ -1,71 +1,40 @@
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Map;
-import com.opencsv.CSVWriter;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
-import com.opencsv.bean.StatefulBeanToCsv;
-import com.opencsv.bean.StatefulBeanToCsvBuilder;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
-import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
-public class FileHandler {
+public class MainClass {
+    public static void main(String[] args) {
+        // Call the method to create the validation string
+        String validationString = createValidationString();
 
-    // Method to append CSV data to a file
-    public void appendCsvFile(Map<String, Object> map) throws IOException, CsvRequiredFieldEmptyException, CsvDataTypeMismatchException {
-        Class<Object> dataType = (Class<Object>) map.get("CLASS_TYPE");
-        String fileName = (String) map.get("FILE_NAME_WITH_STORAGE_PATH");
-
-        // Validate file name
-        if (!isValidFileName(fileName)) {
-            throw new IllegalArgumentException("Invalid file name.");
-        }
-
-        // Construct the file path
-        Path filePath = Paths.get(fileName).normalize().toAbsolutePath();
-
-        // Validate file path
-        if (!isValidFilePath(filePath)) {
-            throw new IllegalArgumentException("Invalid file path or potential path traversal attempt.");
-        }
-
-        try (StringWriter stringWriter = new StringWriter();
-             CSVWriter csvWriter = new CSVWriter(stringWriter)) {
-
-            // Mapping strategy for CSV writing
-            ColumnPositionMappingStrategy<Object> mappingStrategy = new ColumnPositionMappingStrategy<>();
-            mappingStrategy.setType(dataType);
-            mappingStrategy.setColumnMapping((String) map.get("COLUMN_LIST_FOR_HEADER"));
-
-            // Create CSV writer with mapping strategy
-            StatefulBeanToCsv<Object> beanWriter = new StatefulBeanToCsvBuilder<>(csvWriter)
-                    .withMappingStrategy(mappingStrategy)
-                    .build();
-
-            // Write data to CSV
-            beanWriter.write((ArrayList) map.get("DATA"));
-
-            // Write the CSV data to the file
-            Files.write(filePath, stringWriter.toString().getBytes(StandardCharsets.UTF_8));
-        }
+        // Print the validation string
+        System.out.println(validationString);
     }
 
-    // Method to validate file name
-    private boolean isValidFileName(String fileName) {
-        // Basic validation: Allow alphanumeric characters, underscores, dashes, and dots
-        // Adjust this regex pattern based on your specific requirements
-        String regexPattern = "^[\\w-.]+$";
-        return fileName.matches(regexPattern);
+    // Method to create the validation string
+    private static String createValidationString() {
+        // Declare class variables
+        String host = "apitest.cybersource.com";
+        String requestTarget = "post /pts/v2/payments/";
+        String merchantId = "mymerchantid";
+        String digest = "SHA-256=gXWufV4Zc7VkN9Wkv9jh/JuAVclqDusx3vkyo3uJFWU=";
+
+        // Get the current date and format it
+        String formattedDate = getCurrentDate();
+
+        // Build the validation string
+        StringBuilder validationString = new StringBuilder();
+        validationString.append("host: ").append(host).append("\n");
+        validationString.append("date: ").append(formattedDate).append("\n");
+        validationString.append("(request-target): ").append(requestTarget).append("\n");
+        validationString.append("digest: ").append(digest).append("\n");
+        validationString.append("v-c-merchant-id: ").append(merchantId).append("\n");
+
+        return validationString.toString();
     }
 
-    // Method to validate file path
-    private boolean isValidFilePath(Path filePath) {
-        // Example: Allow only files within a specific directory
-        Path baseDirectory = Paths.get("/path/to/allowed/directory");
-        return filePath.startsWith(baseDirectory);
+    // Method to get the current date and format it
+    private static String getCurrentDate() {
+        ZonedDateTime currentDate = ZonedDateTime.now();
+        return DateTimeFormatter.RFC_1123_DATE_TIME.format(currentDate);
     }
 }
