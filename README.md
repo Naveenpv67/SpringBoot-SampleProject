@@ -1,1 +1,1 @@
-podman run --name my_pgadmin -p 5050:80 -e PGADMIN_DEFAULT_EMAIL=user@domain.com -e PGADMIN_DEFAULT_PASSWORD=mysecretpassword -d dpage/pgadmin4
+podman run --name my_postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -v ~/postgres_data:/var/lib/postgresql/data -d postgres:latest
