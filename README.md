@@ -1,43 +1,54 @@
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-public class WasteController {
+public class LogController {
 
-    @Autowired
-    private TransactionLogProperties transactionLogProperties;
+    // Autowire your TransactionLogProperties bean
+    private final TransactionLogProperties transactionLogProperties;
+
+    // Constructor
+    public LogController(TransactionLogProperties transactionLogProperties) {
+        this.transactionLogProperties = transactionLogProperties;
+    }
 
     @PostMapping("/log")
-    public void logRequest(@RequestBody RequestDTO requestDTO) {
-        // Initialize the TMIMap with default or null values
-        Map<String, Object> TMIMap = new HashMap<>();
-        for (String key : transactionLogProperties.getMasterInfoMap().keySet()) {
-            TMIMap.put(key, null); // Initialize all values to null
-        }
+    public String logRequest(@RequestBody RequestDTO requestDTO) {
+        // Initialize the request object using tmiMap
+        Map<String, String> tmiMap = new HashMap<>(transactionLogProperties.getMasterInfoMap());
 
-        // Map all the values from the RequestDTO object to TMIMap
-        for (Map.Entry<String, String> entry : requestDTO.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            // Check if alias name exists in the properties file
-            if (transactionLogProperties.getAliasNameMap().containsKey(key)) {
-                String alias = transactionLogProperties.getAliasNameMap().get(key);
-                TMIMap.put(alias, value);
-            } else {
-                TMIMap.put(key, value);
+        // Create a copy of the RequestDTO
+        Map<String, String> requestCopy = new HashMap<>(requestDTO);
+
+        // Load alias names from application.properties
+        Map<String, String> aliasMap = transactionLogProperties.getAliasNameMap();
+
+        // Replace alias keys with original keys in the RequestDTO copy
+        for (Map.Entry<String, String> entry : aliasMap.entrySet()) {
+            String aliasKey = entry.getKey();
+            String originalKey = entry.getValue();
+            if (requestCopy.containsKey(aliasKey)) {
+                // Get the value associated with the alias key
+                String value = requestCopy.get(aliasKey);
+                // Remove the alias key from the RequestDTO copy
+                requestCopy.remove(aliasKey);
+                // Add the original key with the same value
+                requestCopy.put(originalKey, value);
             }
         }
 
-        // Log the mapped values
-        logToLibrary(TMIMap);
-    }
+        // Map values to tmiMap based on the keys present in the RequestDTO copy
+        for (Map.Entry<String, String> entry : requestCopy.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            if (tmiMap.containsKey(key)) {
+                tmiMap.put(key, value);
+            }
+        }
 
-    // Method to log values to the library
-    private void logToLibrary(Map<String, Object> mappedValues) {
-        // Logic to log values using the library jar
+        // Now you have the RequestDTO copy with alias keys replaced by original keys
+        // and the tmiMap populated with values from the RequestDTO copy
+        // Proceed with logging or further processing
+
+        return "Logging completed";
     }
 }
