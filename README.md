@@ -1,54 +1,49 @@
-import java.util.HashMap;
-import java.util.Map;
-
-public class LogController {
-
-    // Autowire your TransactionLogProperties bean
-    private final TransactionLogProperties transactionLogProperties;
-
-    // Constructor
-    public LogController(TransactionLogProperties transactionLogProperties) {
-        this.transactionLogProperties = transactionLogProperties;
-    }
-
-    @PostMapping("/log")
-    public String logRequest(@RequestBody RequestDTO requestDTO) {
-        // Initialize the request object using tmiMap
-        Map<String, String> tmiMap = new HashMap<>(transactionLogProperties.getMasterInfoMap());
-
-        // Create a copy of the RequestDTO
-        Map<String, String> requestCopy = new HashMap<>(requestDTO);
-
-        // Load alias names from application.properties
-        Map<String, String> aliasMap = transactionLogProperties.getAliasNameMap();
-
-        // Replace alias keys with original keys in the RequestDTO copy
-        for (Map.Entry<String, String> entry : aliasMap.entrySet()) {
-            String aliasKey = entry.getKey();
-            String originalKey = entry.getValue();
-            if (requestCopy.containsKey(aliasKey)) {
-                // Get the value associated with the alias key
-                String value = requestCopy.get(aliasKey);
-                // Remove the alias key from the RequestDTO copy
-                requestCopy.remove(aliasKey);
-                // Add the original key with the same value
-                requestCopy.put(originalKey, value);
-            }
-        }
-
-        // Map values to tmiMap based on the keys present in the RequestDTO copy
-        for (Map.Entry<String, String> entry : requestCopy.entrySet()) {
+// Check if default fields are null or empty and populate with default values
+        Map<String, String> defaultFieldsMap = transactionLogProperties.getDefaultFieldsMap();
+        for (Map.Entry<String, String> entry : defaultFieldsMap.entrySet()) {
             String key = entry.getKey();
-            String value = entry.getValue();
-            if (tmiMap.containsKey(key)) {
-                tmiMap.put(key, value);
+            String defaultValue = entry.getValue();
+            if (tmiMap.get(key) == null || tmiMap.get(key).isEmpty()) {
+                tmiMap.put(key, defaultValue);
             }
         }
 
-        // Now you have the RequestDTO copy with alias keys replaced by original keys
-        // and the tmiMap populated with values from the RequestDTO copy
-        // Proceed with logging or further processing
 
-        return "Logging completed";
+   // Eliminate unnecessary fields from tmiMap
+        List<String> fieldsToEliminate = transactionLogProperties.getFieldsToEliminate();
+        for (String field : fieldsToEliminate) {
+            tmiMap.remove(field);
+        }
+
+
+
+// Hash specified field values in tmiMap
+        List<String> fieldsToHash = transactionLogProperties.getFieldsToHash();
+        for (String field : fieldsToHash) {
+            if (tmiMap.containsKey(field)) {
+                String valueToHash = tmiMap.get(field);
+                String hashedValue = hashValue(valueToHash);
+                tmiMap.put(field, hashedValue);
+            }
+        }
+
+        
+
+
+// Method to hash a value using SHA-512 algorithm
+    private String hashValue(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-512");
+            byte[] hashBytes = digest.digest(value.getBytes());
+            StringBuilder stringBuilder = new StringBuilder();
+            for (byte b : hashBytes) {
+                stringBuilder.append(String.format("%02x", b));
+            }
+            return stringBuilder.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            // Handle exception
+            return null;
+        }
     }
-}
+        
