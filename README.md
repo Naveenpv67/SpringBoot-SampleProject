@@ -1,3 +1,10 @@
+find /path/to/folder -type f -print0 | xargs -0 wc -l
+
+
+find /path/to/folder -type f | wc -l
+
+
+
 Certainly! Here's a Java code snippet to count the number of lines in each file in a specific folder:
 
 ```java
