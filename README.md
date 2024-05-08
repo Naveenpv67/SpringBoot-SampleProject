@@ -1,45 +1,58 @@
-You can achieve this by splitting each line by "/databases/" and extracting the string after it. Here's a Java code snippet to do that:
+Got it, here's the SQL script with comments indicating where you should put CREATE TABLE statements and INSERT statements:
 
-```java
-import java.util.ArrayList;
-import java.util.List;
+```sql
+-- Create Transaction table
+CREATE TABLE Transaction (
+    ID VARCHAR(255) PRIMARY KEY,
+    AccountID VARCHAR(255),
+    Type VARCHAR(255),
+    State VARCHAR(255),
+    Amount DECIMAL(18,2),
+    CurrencyCode VARCHAR(3),
+    PayerAccountNumber VARCHAR(255),
+    PayerIFSC VARCHAR(255),
+    PayeeAccountNumber VARCHAR(255),
+    PayeeIFSC VARCHAR(255),
+    PayeeMCC VARCHAR(255),
+    PayeeType VARCHAR(255),
+    ReferenceNumber VARCHAR(255),
+    PurposeCode VARCHAR(255),
+    InitiationMode VARCHAR(255),
+    OrigTransactionID VARCHAR(255),
+    ReconciliationState VARCHAR(255),
+    ReconciliationTime TIMESTAMP,
+    CreationTime TIMESTAMP,
+    LastModifiedTime TIMESTAMP,
+    TransactionTime TIMESTAMP,
+    AdditionalData VARCHAR(255)
+);
 
-public class Main {
-    public static void main(String[] args) {
-        String data = "33,77: instance-1/databases/rules-engine-1 database: projects/common-dev-6/instances/issuer-switch-instance-1/databases/issuer-switch-database-1\n" +
-                "42,77: database: projects/common-dev-6/instances/issuer-switch-instance-1/databases/api-service-db-1";
+-- Create Account table
+CREATE TABLE Account (
+    ID VARCHAR(255) PRIMARY KEY,
+    AccountNumber VARCHAR(255),
+    IFSC VARCHAR(255),
+    AccountType VARCHAR(255),
+    State VARCHAR(255),
+    Balance DECIMAL(18,2),
+    CurrencyCode VARCHAR(3),
+    LastReconciledBalance VARCHAR(255),
+    LastReconciliationState VARCHAR(255),
+    LastReconciliationTime TIMESTAMP,
+    CreationTime TIMESTAMP,
+    LastModifiedTime TIMESTAMP,
+    AdditionalData VARCHAR(255)
+);
 
-        List<String> databaseNames = extractDatabaseNames(data);
-        
-        System.out.println("Database names:");
-        for (String name : databaseNames) {
-            System.out.println(name);
-        }
-    }
+-- Example data for Transaction table
+INSERT INTO Transaction (ID, AccountID, Type, State, Amount, CurrencyCode, PayerAccountNumber, PayerIFSC, PayeeAccountNumber, PayeeIFSC, PayeeMCC, PayeeType, ReferenceNumber, PurposeCode, InitiationMode, OrigTransactionID, ReconciliationState, ReconciliationTime, CreationTime, LastModifiedTime, TransactionTime, AdditionalData)
+VALUES 
+('1', '1001', 'Credit', 'Completed', 100.00, 'USD', '123456789', 'ABCD1234', '987654321', 'WXYZ5678', '1234', 'Individual', 'REF123', 'General', 'Online', NULL, 'Reconciled', '2024-05-08 12:00:00', '2024-05-08 10:00:00', '2024-05-08 10:00:00', '2024-05-08 10:00:00', 'Additional info');
 
-    public static List<String> extractDatabaseNames(String data) {
-        List<String> databaseNames = new ArrayList<>();
-        String[] lines = data.split("\n");
-
-        for (String line : lines) {
-            int index = line.indexOf("/databases/");
-            if (index != -1) {
-                String databaseName = line.substring(index + "/databases/".length());
-                databaseNames.add(databaseName);
-            }
-        }
-
-        return databaseNames;
-    }
-}
+-- Example data for Account table
+INSERT INTO Account (ID, AccountNumber, IFSC, AccountType, State, Balance, CurrencyCode, LastReconciledBalance, LastReconciliationState, LastReconciliationTime, CreationTime, LastModifiedTime, AdditionalData)
+VALUES 
+('1001', '123456789', 'ABCD1234', 'Savings', 'Active', 5000.00, 'USD', '5000.00', 'Reconciled', '2024-05-08 12:00:00', '2024-05-08 10:00:00', '2024-05-08 10:00:00', 'Additional info');
 ```
 
-This code will output:
-
-```
-Database names:
-issuer-switch-database-1
-api-service-db-1
-```
-
-This code splits the input data into lines, then for each line, it finds the index of "/databases/" and extracts the string after it. Finally, it adds the extracted database names to a list.
+You should execute the CREATE TABLE statements first to create the tables, and then execute the INSERT statements to insert example data into the tables.
