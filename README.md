@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class RecursiveLineCounterWithTotal {
+public class GoFileLineCounter {
     private static int totalFileCount = 0;
 
     public static void main(String[] args) {
@@ -12,18 +12,18 @@ public class RecursiveLineCounterWithTotal {
 
         File folder = new File(folderPath);
         if (folder.exists() && folder.isDirectory()) {
-            countLinesInFiles(folder);
-            System.out.println("Total files: " + totalFileCount);
+            countLinesInGoFiles(folder);
+            System.out.println("Total .go files: " + totalFileCount);
         } else {
             System.out.println("Specified folder does not exist or is not a directory.");
         }
     }
 
-    private static void countLinesInFiles(File folder) {
+    private static void countLinesInGoFiles(File folder) {
         File[] files = folder.listFiles();
         if (files != null) {
             for (File file : files) {
-                if (file.isFile()) {
+                if (file.isFile() && file.getName().endsWith(".go")) {
                     try {
                         long lineCount = Files.lines(Paths.get(file.getAbsolutePath())).count();
                         System.out.println("File: " + file.getName() + ", Lines: " + lineCount);
@@ -32,7 +32,7 @@ public class RecursiveLineCounterWithTotal {
                         e.printStackTrace();
                     }
                 } else if (file.isDirectory()) {
-                    countLinesInFiles(file); // Recursive call for subfolder
+                    countLinesInGoFiles(file); // Recursive call for subfolder
                 }
             }
         } else {
