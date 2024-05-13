@@ -17,3 +17,11 @@ public class ResponseWrapper extends HttpServletResponseWrapper {
         return sw.toString();
     }
 }
+
+
+private String extractResponseBody(HttpServletResponse response) {
+    ResponseWrapper responseWrapper = new ResponseWrapper(response);
+    // Get the response body before it's sent to the client
+    String responseBody = responseWrapper.getResponseBody();
+    return responseBody;
+}
