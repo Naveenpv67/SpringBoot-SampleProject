@@ -1,27 +1,29 @@
-import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.HttpServletRequestWrapper;
 
-public class ResponseWrapper extends HttpServletResponseWrapper {
+public class RequestWrapper extends HttpServletRequestWrapper {
 
-    private StringWriter sw = new StringWriter();
+    private String requestBody;
 
-    public ResponseWrapper(HttpServletResponse response) {
-        super(response);
+    public RequestWrapper(HttpServletRequest request) {
+        super(request);
+        // Capture the request body when the wrapper is created
+        try {
+            requestBody = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+        } catch (IOException e) {
+            e.printStackTrace();
+            requestBody = null;
+        }
     }
 
-    @Override
-    public PrintWriter getWriter() throws IOException {
-        return new PrintWriter(sw);
-    }
-
-    public String getResponseBody() {
-        return sw.toString();
+    public String getRequestBody() {
+        return requestBody;
     }
 }
 
 
-private String extractResponseBody(HttpServletResponse response) {
-    ResponseWrapper responseWrapper = new ResponseWrapper(response);
-    // Get the response body before it's sent to the client
-    String responseBody = responseWrapper.getResponseBody();
-    return responseBody;
+private String extractRequestBody(HttpServletRequest request) {
+    RequestWrapper requestWrapper = new RequestWrapper(request);
+    // Get the request body using the wrapper
+    return requestWrapper.getRequestBody();
 }
+
