@@ -20,8 +20,13 @@ public class ControllerLoggingAspect {
 
         // Get request details
         String requestBody = extractRequestBody(request);
-        String devicePlatform = request.getHeader("Device-Platform");
-        String deviceOsVersion = request.getHeader("Device-OS-Version");
+        
+transactionRequest.setDeviceOsPlatform(request.getHeader(TransactionUtilityConstants.DEVICE_PLATFORM));
+transactionRequest.setDeviceOsVersion(request.getHeader(TransactionUtilityConstants.DEVICE_OS_VERSION));
+transactionRequest.setIpAddress(request.getHeader(TransactionUtilityConstants.IP_ADDRESS));
+transactionRequest.setLocation(request.getHeader(TransactionUtilityConstants.LOCATION));
+transactionRequest.setBrowserVersion(request.getHeader(TransactionUtilityConstants.BROWSER_VERSION));
+transactionRequest.setUserAgent(request.getHeader(TransactionUtilityConstants.USER_AGENT));
 
         // Proceed with the method execution
         Object methodResult = null;
