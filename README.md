@@ -1,3 +1,23 @@
+@Component
+public class TransactionLoggingUtil {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    // Other methods...
+
+    // Method to populate fields of TransactionLoggingRequest object
+    public void populateTransactionLoggingRequest(TransactionLoggingRequest transactionLoggingRequest, HttpServletRequest request) {
+        // Set device information from request headers
+        transactionLoggingRequest.setDeviceOsPlatform(request.getHeader("Device-Platform"));
+        transactionLoggingRequest.setDeviceOsVersion(request.getHeader("Device-OS-Version"));
+        
+        // Set other fields as needed
+        transactionLoggingRequest.setTimestamp(new Date());
+        // You can populate more fields here if needed
+    }
+}
+
 @Aspect
 @Component
 public class ControllerLoggingAspect {
@@ -20,14 +40,11 @@ public class ControllerLoggingAspect {
 
         // Get request details
         String requestBody = extractRequestBody(request);
-        
-transactionRequest.setDeviceOsPlatform(request.getHeader(TransactionUtilityConstants.DEVICE_PLATFORM));
-transactionRequest.setDeviceOsVersion(request.getHeader(TransactionUtilityConstants.DEVICE_OS_VERSION));
-transactionRequest.setIpAddress(request.getHeader(TransactionUtilityConstants.IP_ADDRESS));
-transactionRequest.setLocation(request.getHeader(TransactionUtilityConstants.LOCATION));
-transactionRequest.setBrowserVersion(request.getHeader(TransactionUtilityConstants.BROWSER_VERSION));
-transactionRequest.setUserAgent(request.getHeader(TransactionUtilityConstants.USER_AGENT));
 
+        // Populate transaction logging request
+        TransactionLoggingRequest transactionLoggingRequest = transactionLoggingUtil.createTransactionLoggingRequest(new TransactionEventPayload(CommonUtilityFunctions.getRandomUUID(), "LOGIN"));
+        transactionLoggingUtil.populateTransactionLoggingRequest(transactionLoggingRequest, request);
+        
         // Proceed with the method execution
         Object methodResult = null;
         try {
@@ -35,7 +52,7 @@ transactionRequest.setUserAgent(request.getHeader(TransactionUtilityConstants.US
             methodResult = joinPoint.proceed();
         } catch (Exception e) {
             // Log failure transaction for exceptions
-            transactionLoggingUtil.logFailedTransaction(requestBody, HttpStatus.INTERNAL_SERVER_ERROR.toString(), e.getMessage(), e, request, response);
+            transactionLoggingUtil.logFailedTransaction(requestBody, HttpStatus.INTERNAL_SERVER_ERROR.toString(), e.getMessage(), e, transactionLoggingRequest, request, response);
             // Re-throw the exception to propagate it up the call stack
             throw e;
         }
@@ -45,39 +62,18 @@ transactionRequest.setUserAgent(request.getHeader(TransactionUtilityConstants.US
             String responseBody = extractResponseBody(response);
             if (response.getStatus() >= 200 && response.getStatus() < 300) {
                 // Log successful transaction
-                TransactionLoggingRequest transactionLoggingRequest = transactionLoggingUtil.createTransactionLoggingRequest(new TransactionEventPayload(CommonUtilityFunctions.getRandomUUID(), "LOGIN"));
                 transactionLoggingUtil.logSuccessfulTransaction(requestBody, responseBody, transactionLoggingRequest, request, response);
             } else {
                 // Log failure transaction for non-2xx status codes
-                transactionLoggingUtil.logFailedTransaction(requestBody, String.valueOf(response.getStatus()), "Error Message", null, request, response);
+                transactionLoggingUtil.logFailedTransaction(requestBody, String.valueOf(response.getStatus()), "Error Message", null, transactionLoggingRequest, request, response);
             }
         } else {
             // Log failure transaction when there's no response
-            transactionLoggingUtil.logFailedTransaction(requestBody, HttpStatus.INTERNAL_SERVER_ERROR.toString(), "No response received", null, request, response);
+            transactionLoggingUtil.logFailedTransaction(requestBody, HttpStatus.INTERNAL_SERVER_ERROR.toString(), "No response received", null, transactionLoggingRequest, request, response);
         }
 
         return methodResult;
     }
 
-    // Method to extract request body as string
-    private String extractRequestBody(HttpServletRequest request) {
-        try {
-            return objectMapper.writeValueAsString(request.getReader().lines().collect(Collectors.joining(System.lineSeparator())));
-        } catch (IOException e) {
-            // Log error if unable to extract request body
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // Method to extract response body as string
-    private String extractResponseBody(HttpServletResponse response) {
-        try {
-            return objectMapper.writeValueAsString(response.getBufferedReader().lines().collect(Collectors.joining(System.lineSeparator())));
-        } catch (IOException e) {
-            // Log error if unable to extract response body
-            e.printStackTrace();
-            return null;
-        }
-    }
+    // Other methods...
 }
