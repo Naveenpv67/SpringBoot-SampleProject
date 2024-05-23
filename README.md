@@ -548,6 +548,66 @@ public class InterfaceLoggingComponent {
 
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import java.time.ZonedDateTime;
+
+/**
+ * Service for logging successful interface transactions.
+ */
+@Service
+public class InterfaceLoggingService {
+
+    private static final Logger log = LoggerFactory.getLogger(InterfaceLoggingService.class);
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * Logs a successful interface transaction.
+     *
+     * @param request                the request object
+     * @param response               the response object
+     * @param interfaceLoggingRequest the interface logging request object
+     */
+    public void logSuccessfulTransaction(Object request, Object response,
+                                         InterfaceLoggingRequest interfaceLoggingRequest) {
+        try {
+            // Set end timestamp
+            interfaceLoggingRequest.setEndTimestamp(TransactionUtilityUtils.getRfc3339Timestamp(ZonedDateTime.now()));
+
+            // Set request and response details
+            interfaceLoggingRequest.setRequest(mapper.writeValueAsString(request));
+            interfaceLoggingRequest.setResponse(mapper.writeValueAsString(response));
+
+            // Set status and correlation ID
+            interfaceLoggingRequest.setStatus(InterfaceLoggingConstants.SUCCESS);
+            interfaceLoggingRequest.setCorrelationId((String) httpServletRequest.getAttribute(TransactionUtilityConstants.CORRELATION_ID));
+
+            // Populate null strings
+            interfaceLoggingRequest = populateNullString(interfaceLoggingRequest);
+
+            // Log the successful transaction
+            log.info("Logging successful interface transaction with Correlation ID: {}", interfaceLoggingRequest.getCorrelationId());
+            interfaceLoggingService.log(interfaceLoggingRequest);
+            log.info("Successful interface transaction logged: {}", interfaceLoggingRequest);
+        } catch (Exception e) {
+            log.error("Failed to log successful interface transaction: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Populates null strings in the InterfaceLoggingRequest object.
+     *
+     * @param request the interface logging request object
+     * @return the populated interface logging request object
+     */
+    private InterfaceLoggingRequest populateNullString(InterfaceLoggingRequest request) {
+        // Implementation of populateNullString to handle null values
+        // ...
+        return request;
+    }
+}
 
 
 
