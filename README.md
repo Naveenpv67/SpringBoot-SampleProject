@@ -180,8 +180,6 @@ public class LoggingFilter extends OncePerRequestFilter {
 
 
 
-
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,6 +214,22 @@ public void logSuccessfulTransaction(Object request, Object response, Transactio
         transactionRequest.setEndTimestamp(TransactionUtilityUtils.getRfc3339Timestamp(ZonedDateTime.now()));
 
         log.info("Logging successful transaction details.");
+
+        // Log the transaction
+        TransactionLoggingRequest loggedRequest = transactionLoggingService.log(transactionRequest);
+        log.info("Event Payload Data Response: {}", mapper.writeValueAsString(loggedRequest));
+
+    } catch (Exception e) {
+        log.error("Failed to publish the log to Transaction Utility.");
+        log.error("Error: {}", e.getMessage(), e);
+    }
+}
+
+
+
+
+
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
