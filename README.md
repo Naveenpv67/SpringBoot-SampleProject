@@ -2,6 +2,8 @@ import ua_parser.Client;
 import ua_parser.Parser;
 import ua_parser.ParseException;
 
+import java.util.Optional;
+
 public class UserAgentParser {
 
     private static final String UNKNOWN_OS = "Unknown OS";
@@ -22,36 +24,37 @@ public class UserAgentParser {
             Parser parser = new Parser();
             Client client = parser.parse(userAgent);
 
-            String os = client.os.family != null ? client.os.family : UNKNOWN_OS;
-            String osVersionMajor = client.os.major != null ? client.os.major : ZERO;
-            String osVersionMinor = client.os.minor != null ? client.os.minor : ZERO;
-            String osVersionPatch = client.os.patch != null ? client.os.patch : "";
+            String os = Optional.ofNullable(client.os.family).orElse(UNKNOWN_OS);
 
             StringBuilder osVersionBuilder = new StringBuilder();
-            osVersionBuilder.append(osVersionMajor).append(DOT).append(osVersionMinor);
-            if (!osVersionPatch.isEmpty()) {
-                osVersionBuilder.append(DOT).append(osVersionPatch);
-            }
+            osVersionBuilder.append(Optional.ofNullable(client.os.major).orElse(ZERO))
+                            .append(DOT)
+                            .append(Optional.ofNullable(client.os.minor).orElse(ZERO))
+                            .append(DOT)
+                            .append(Optional.ofNullable(client.os.patch).orElse(ZERO));
             String osVersion = osVersionBuilder.toString();
 
-            String browserName = client.userAgent.family != null ? client.userAgent.family : UNKNOWN_BROWSER;
-            String browserVMajor = client.userAgent.major != null ? client.userAgent.major : ZERO;
-            String browserVMinor = client.userAgent.minor != null ? client.userAgent.minor : ZERO;
-            String browserVPatch = client.userAgent.patch != null ? client.userAgent.patch : "";
+            StringBuilder browserNameBuilder = new StringBuilder(Optional.ofNullable(client.userAgent.family).orElse(UNKNOWN_BROWSER));
 
-            StringBuilder browserVersionBuilder = new StringBuilder();
-            browserVersionBuilder.append(browserVMajor).append(DOT).append(browserVMinor);
-            if (!browserVPatch.isEmpty()) {
-                browserVersionBuilder.append(DOT).append(browserVPatch);
+            if (!browserNameBuilder.toString().equals(UNKNOWN_BROWSER)) {
+                browserNameBuilder.append(SPACE)
+                                  .append(Optional.ofNullable(client.userAgent.major).orElse(ZERO))
+                                  .append(DOT)
+                                  .append(Optional.ofNullable(client.userAgent.minor).orElse(ZERO))
+                                  .append(DOT)
+                                  .append(Optional.ofNullable(client.userAgent.patch).orElse(ZERO));
             }
-            String browserVersion = browserVersionBuilder.toString();
+            String browserName = browserNameBuilder.toString();
 
-            System.out.println(DEVICE_OS_PLATFORM);
-            System.out.println(os + SPACE + osVersion);
-            System.out.println(DEVICE_OS_PLATFORM);
-            System.out.println(os);
-            System.out.println(BROWSER_VERSION);
-            System.out.println(browserName + SPACE + browserVersion);
+            StringBuilder output = new StringBuilder();
+            output.append(DEVICE_OS_PLATFORM).append("\n")
+                  .append(os).append(SPACE).append(osVersion).append("\n")
+                  .append(DEVICE_OS_PLATFORM).append("\n")
+                  .append(os).append("\n")
+                  .append(BROWSER_VERSION).append("\n")
+                  .append(browserName);
+
+            System.out.println(output.toString());
         } catch (ParseException e) {
             System.err.println("Failed to parse the user agent string.");
             e.printStackTrace();
