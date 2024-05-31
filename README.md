@@ -1,66 +1,76 @@
-import ua_parser.Client;
-import ua_parser.Parser;
-import ua_parser.ParseException;
+package com.example.demo.utils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.Optional;
+import java.io.IOException;
 
-public class UserAgentParser {
-
-    private static final String UNKNOWN_OS = "Unknown OS";
-    private static final String UNKNOWN_BROWSER = "Unknown Browser";
-    private static final String ZERO = "0";
-    private static final String DOT = ".";
-    private static final String SPACE = " ";
-    private static final String DEVICE_OS_PLATFORM = "device_os_platform";
-    private static final String BROWSER_VERSION = "Browser_version";
-    private static final String USER_AGENT_STRING = "Your User Agent String Here";
+public class Main {
 
     public static void main(String[] args) {
-        parseAndPrintUserAgent(USER_AGENT_STRING);
+        String json = "{\r\n"
+        		+ "    \"S:Envelope\": {\r\n"
+        		+ "        \"xmlns:S\": \"http://schemas.xmlsoap.org/soap/envelope/\",\r\n"
+        		+ "        \"S:Body\": {\r\n"
+        		+ "            \"ns11:doDematLandingPageResponse\": {\r\n"
+        		+ "                \"xmlns:ns10\": \"http://dto.common.domain.framework.fc.ofss.com\",\r\n"
+        		+ "                \"return\": {\r\n"
+        		+ "                    \"msghdr\": {\r\n"
+        		+ "                        \"resptmstmp\": 20240531074814,\r\n"
+        		+ "                        \"msgtp\": \"DBACTLSTRP\",\r\n"
+        		+ "                        \"respapp\": \"DEBOS\"\r\n"
+        		+ "                    },\r\n"
+        		+ "                    \"readtis\": {\r\n"
+        		+ "                        \"regrefno\": 3415605,\r\n"
+        		+ "                        \"custid\": 50000045\r\n"
+        		+ "                    },\r\n"
+        		+ "                    \"respstat\": {\r\n"
+        		+ "                        \"respmsg\": \"Duplicate request reference number 3415605\",\r\n"
+        		+ "                        \"respcode\": 0\r\n"
+        		+ "                    },\r\n"
+        		+ "                    \"debosdata\": {\r\n"
+        		+ "                        \"acctlist\": {\r\n"
+        		+ "                            \"acctdil\": {\r\n"
+        		+ "                                \"mfund\": \"\"\r\n"
+        		+ "                            }\r\n"
+        		+ "                        }\r\n"
+        		+ "                    }\r\n"
+        		+ "                }\r\n"
+        		+ "            }\r\n"
+        		+ "        }\r\n"
+        		+ "    }\r\n"
+        		+ "}";
+
+        try {
+            Object result = parseResponse(json);
+            System.out.println(result);
+        } catch (IOException e) {
+            System.err.println("Invalid JSON payload");
+        }
     }
 
-    public static void parseAndPrintUserAgent(String userAgent) {
-        try {
-            Parser parser = new Parser();
-            Client client = parser.parse(userAgent);
+    public static Object parseResponse(String json) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(json);
+        JsonNode respStatNode = rootNode
+                .path("S:Envelope")
+                .path("S:Body")
+                .path("ns11:doDematLandingPageResponse")
+                .path("return")
+                .path("respstat");
 
-            String os = Optional.ofNullable(client.os.family).orElse(UNKNOWN_OS);
+        int respcode = respStatNode.path("respcode").asInt();
+        String respmsg = respStatNode.path("respmsg").asText();
 
-            StringBuilder osVersionBuilder = new StringBuilder();
-            osVersionBuilder.append(Optional.ofNullable(client.os.major).orElse(ZERO))
-                            .append(DOT)
-                            .append(Optional.ofNullable(client.os.minor).orElse(ZERO))
-                            .append(DOT)
-                            .append(Optional.ofNullable(client.os.patch).orElse(ZERO));
-            String osVersion = osVersionBuilder.toString();
-
-            StringBuilder browserNameBuilder = new StringBuilder(Optional.ofNullable(client.userAgent.family).orElse(UNKNOWN_BROWSER));
-
-            if (!browserNameBuilder.toString().equals(UNKNOWN_BROWSER)) {
-                browserNameBuilder.append(SPACE)
-                                  .append(Optional.ofNullable(client.userAgent.major).orElse(ZERO))
-                                  .append(DOT)
-                                  .append(Optional.ofNullable(client.userAgent.minor).orElse(ZERO))
-                                  .append(DOT)
-                                  .append(Optional.ofNullable(client.userAgent.patch).orElse(ZERO));
-            }
-            String browserName = browserNameBuilder.toString();
-
-            StringBuilder output = new StringBuilder();
-            output.append(DEVICE_OS_PLATFORM).append("\n")
-                  .append(os).append(SPACE).append(osVersion).append("\n")
-                  .append(DEVICE_OS_PLATFORM).append("\n")
-                  .append(os).append("\n")
-                  .append(BROWSER_VERSION).append("\n")
-                  .append(browserName);
-
-            System.out.println(output.toString());
-        } catch (ParseException e) {
-            System.err.println("Failed to parse the user agent string.");
-            e.printStackTrace();
-        } catch (Exception e) {
-            System.err.println("An unexpected error occurred.");
-            e.printStackTrace();
+        if (respcode != 0) {
+            return "Error: " + respmsg;
+        } else {
+            JsonNode debosDataNode = rootNode
+                    .path("S:Envelope")
+                    .path("S:Body")
+                    .path("ns11:doDematLandingPageResponse")
+                    .path("return")
+                    .path("debosdata");
+            return debosDataNode;
         }
     }
 }
