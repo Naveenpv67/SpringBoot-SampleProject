@@ -1,131 +1,306 @@
-public class DematOBPConstants {
-    public static final String SOAP_ENVELOPE_START = "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">";
-    public static final String SOAP_HEADER = "<SOAP-ENV:Header>";
-    public static final String SOAP_BODY_START = "<SOAP-ENV:Body>";
-    public static final String DEMAT_LANDING_PAGE_START = "<dematLandingPage>";
-    public static final String ARG_START = "<arg>";
-    public static final String BANK_CODE_START = "<con:bankCode>";
-    public static final String BANK_CODE_END = "</con:bankCode>";
-    public static final String CHANNEL_START = "<con:channel>";
-    public static final String CHANNEL_END = "</con:channel>";
-    public static final String TRANSACTING_PARTY_CODE_START = "<con:transactingPartyCode>";
-    public static final String TRANSACTING_PARTY_CODE_END = "</con:transactingPartyCode>";
-    public static final String TRANSACTION_BRANCH_START = "<con:transactionBranch>";
-    public static final String TRANSACTION_BRANCH_END = "</con:transactionBranch>";
-    public static final String USER_ID_START = "<con:userId>";
-    public static final String USER_ID_END = "</con:userId>";
-    public static final String EXTERNAL_REFERENCE_NO_START = "<con:externalReferenceNo>";
-    public static final String EXTERNAL_REFERENCE_NO_END = "</con:externalReferenceNo>";
-    public static final String ARG_END = "</arg>";
-    public static final String ARG1_START = "<arg1>";
-    public static final String MSGHDR_START = "<msgHdr>";
-    public static final String MSG_TP_START = "<msg.tp>";
-    public static final String MSG_TP_END = "</msg.tp>";
-    public static final String REQAPP_START = "<req.app>";
-    public static final String REQAPP_END = "</req.app>";
-    public static final String REQTMSTMP_START = "<req.tmstmp>";
-    public static final String REQTMSTMP_END = "</req.tmstmp>";
-    public static final String MSGHDR_END = "</msgHdr>";
-    public static final String REQDTLS_START = "<reqDtls>";
-    public static final String CUSTID_START = "<custid>";
-    public static final String CUSTID_END = "</custid>";
-    public static final String INCLPLGBAL_START = "<incl.plgbal>";
-    public static final String INCLPLGBAL_END = "</incl.plgbal>";
-    public static final String INCLPVAL_START = "<incl.pval>";
-    public static final String INCLPVAL_END = "</incl.pval>";
-    public static final String INCLPVANAL_START = "<incl.pvanal>";
-    public static final String INCLPVANAL_END = "</incl.pvanal>";
-    public static final String REGREFNO_START = "<regrefno>";
-    public static final String REGREFNO_END = "</regrefno>";
-    public static final String REQDTLS_END = "</reqDtls>";
-    public static final String ARG1_END = "</arg1>";
-    public static final String DEMAT_LANDING_PAGE_END = "</dematLandingPage>";
-    public static final String SOAP_BODY_END = "</SOAP-ENV:Body>";
-    public static final String SOAP_ENVELOPE_END = "</SOAP-ENV:Envelope>";
+soap.envelope.start=<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+soap.header=<SOAP-ENV:Header>
+soap.body.start=<SOAP-ENV:Body>
+demat.landing.page.start=<dematLandingPage>
+arg.start=<arg>
+bank.code.start=<con:bankCode>
+bank.code.end=</con:bankCode>
+channel.start=<con:channel>
+channel.end=</con:channel>
+transacting.party.code.start=<con:transactingPartyCode>
+transacting.party.code.end=</con:transactingPartyCode>
+transaction.branch.start=<con:transactionBranch>
+transaction.branch.end=</con:transactionBranch>
+user.id.start=<con:userId>
+user.id.end=</con:userId>
+external.reference.no.start=<con:externalReferenceNo>
+external.reference.no.end=</con:externalReferenceNo>
+arg.end=</arg>
+arg1.start=<arg1>
+msghdr.start=<msgHdr>
+msg.tp.start=<msg.tp>
+msg.tp.end=</msg.tp>
+reqapp.start=<req.app>
+reqapp.end=</req.app>
+reqtmstmp.start=<req.tmstmp>
+reqtmstmp.end=</req.tmstmp>
+msghdr.end=</msgHdr>
+reqdtls.start=<reqDtls>
+custid.start=<custid>
+custid.end=</custid>
+inclplgbal.start=<incl.plgbal>
+inclplgbal.end=</incl.plgbal>
+inclpval.start=<incl.pval>
+inclpval.end=</incl.pval>
+inclpvanal.start=<incl.pvanal>
+inclpvanal.end=</incl.pvanal>
+regrefno.start=<regrefno>
+regrefno.end=</regrefno>
+reqdtls.end=</reqDtls>
+arg1.end=</arg1>
+demat.landing.page.end=</dematLandingPage>
+soap.body.end=</SOAP-ENV:Body>
+soap.envelope.end=</SOAP-ENV:Envelope>
+obp.demat.landing.page.bank.code=YourBankCode
+obp.demat.landing.page.channel=YourChannel
+obp.demat.landing.page.tx.party.cd=YourTxPartyCode
+obp.demat.landing.page.tx.branch=YourTxBranch
+obp.demat.landing.page.user.id=YourUserId
+obp.demat.landing.page.msg.tp=YourMsgTp
+obp.demat.landing.page.reqapp=YourReqApp
+obp.demat.landing.page.reqtmstmp=YourReqTmsTmp
+obp.demat.landing.page.inclplgbal=YourInclPlgBal
+obp.demat.landing.page.inclpval=YourInclPval
+obp.demat.landing.page.inclpvanal=YourInclPvanal
 
-    // Existing constants
-    public static final String OBP_DEMAT_LANDING_PAGE_BANK_CODE = "YourBankCode";
-    public static final String OBP_DEMAT_LANDING_PAGE_CHANNEL = "YourChannel";
-    public static final String OBP_DEMAT_LANDING_PAGE_TX_PARTY_CD = "YourTxPartyCode";
-    public static final String OBP_DEMAT_LANDING_PAGE_TX_BRANCH = "YourTxBranch";
-    public static final String OBP_DEMAT_LANDING_PAGE_USER_ID = "YourUserId";
-    public static final String OBP_DEMAT_LANDING_PAGE_MSG_TP = "YourMsgTp";
-    public static final String OBP_DEMAT_LANDING_PAGE_REQAPP = "YourReqApp";
-    public static final String OBP_DEMAT_LANDING_PAGE_REQTMSTMP = "YourReqTmsTmp";
-    public static final String OBP_DEMAT_LANDING_PAGE_INCLPLGBAL = "YourInclPlgBal";
-    public static final String OBP_DEMAT_LANDING_PAGE_INCLPVAL = "YourInclPval";
-    public static final String OBP_DEMAT_LANDING_PAGE_INCLPVANAL = "YourInclPvanal";
+
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class DematProperties {
+
+    @Value("${soap.envelope.start}")
+    public String soapEnvelopeStart;
+
+    @Value("${soap.header}")
+    public String soapHeader;
+
+    @Value("${soap.body.start}")
+    public String soapBodyStart;
+
+    @Value("${demat.landing.page.start}")
+    public String dematLandingPageStart;
+
+    @Value("${arg.start}")
+    public String argStart;
+
+    @Value("${bank.code.start}")
+    public String bankCodeStart;
+
+    @Value("${bank.code.end}")
+    public String bankCodeEnd;
+
+    @Value("${channel.start}")
+    public String channelStart;
+
+    @Value("${channel.end}")
+    public String channelEnd;
+
+    @Value("${transacting.party.code.start}")
+    public String transactingPartyCodeStart;
+
+    @Value("${transacting.party.code.end}")
+    public String transactingPartyCodeEnd;
+
+    @Value("${transaction.branch.start}")
+    public String transactionBranchStart;
+
+    @Value("${transaction.branch.end}")
+    public String transactionBranchEnd;
+
+    @Value("${user.id.start}")
+    public String userIdStart;
+
+    @Value("${user.id.end}")
+    public String userIdEnd;
+
+    @Value("${external.reference.no.start}")
+    public String externalReferenceNoStart;
+
+    @Value("${external.reference.no.end}")
+    public String externalReferenceNoEnd;
+
+    @Value("${arg.end}")
+    public String argEnd;
+
+    @Value("${arg1.start}")
+    public String arg1Start;
+
+    @Value("${msghdr.start}")
+    public String msghdrStart;
+
+    @Value("${msg.tp.start}")
+    public String msgTpStart;
+
+    @Value("${msg.tp.end}")
+    public String msgTpEnd;
+
+    @Value("${reqapp.start}")
+    public String reqappStart;
+
+    @Value("${reqapp.end}")
+    public String reqappEnd;
+
+    @Value("${reqtmstmp.start}")
+    public String reqtmstmpStart;
+
+    @Value("${reqtmstmp.end}")
+    public String reqtmstmpEnd;
+
+    @Value("${msghdr.end}")
+    public String msghdrEnd;
+
+    @Value("${reqdtls.start}")
+    public String reqdtlsStart;
+
+    @Value("${custid.start}")
+    public String custidStart;
+
+    @Value("${custid.end}")
+    public String custidEnd;
+
+    @Value("${inclplgbal.start}")
+    public String inclplgbalStart;
+
+    @Value("${inclplgbal.end}")
+    public String inclplgbalEnd;
+
+    @Value("${inclpval.start}")
+    public String inclpvalStart;
+
+    @Value("${inclpval.end}")
+    public String inclpvalEnd;
+
+    @Value("${inclpvanal.start}")
+    public String inclpvanalStart;
+
+    @Value("${inclpvanal.end}")
+    public String inclpvanalEnd;
+
+    @Value("${regrefno.start}")
+    public String regrefnoStart;
+
+    @Value("${regrefno.end}")
+    public String regrefnoEnd;
+
+    @Value("${reqdtls.end}")
+    public String reqdtlsEnd;
+
+    @Value("${arg1.end}")
+    public String arg1End;
+
+    @Value("${demat.landing.page.end}")
+    public String dematLandingPageEnd;
+
+    @Value("${soap.body.end}")
+    public String soapBodyEnd;
+
+    @Value("${soap.envelope.end}")
+    public String soapEnvelopeEnd;
+
+    @Value("${obp.demat.landing.page.bank.code}")
+    public String obpDematLandingPageBankCode;
+
+    @Value("${obp.demat.landing.page.channel}")
+    public String obpDematLandingPageChannel;
+
+    @Value("${obp.demat.landing.page.tx.party.cd}")
+    public String obpDematLandingPageTxPartyCd;
+
+    @Value("${obp.demat.landing.page.tx.branch}")
+    public String obpDematLandingPageTxBranch;
+
+    @Value("${obp.demat.landing.page.user.id}")
+    public String obpDematLandingPageUserId;
+
+    @Value("${obp.demat.landing.page.msg.tp}")
+    public String obpDematLandingPageMsgTp;
+
+    @Value("${obp.demat.landing.page.reqapp}")
+    public String obpDematLandingPageReqapp;
+
+    @Value("${obp.demat.landing.page.reqtmstmp}")
+    public String obpDematLandingPageReqtmstmp;
+
+    @Value("${obp.demat.landing.page.inclplgbal}")
+    public String obpDematLandingPageInclplgbal;
+
+    @Value("${obp.demat.landing.page.inclpval}")
+    public String obpDematLandingPageInclpval;
+
+    @Value("${obp.demat.landing.page.inclpvanal}")
+    public String obpDematLandingPageInclpvanal;
 }
 
 
-StringBuilder soapEnvelope = null;
 
-try {
-    String userId;
-    String customerId;
-    String refNo = String.valueOf((new Random()).nextInt(9000000) + 1000000);
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-    // Use StringBuilder to build the XML structure using constants
-    soapEnvelope = new StringBuilder();
+@Service
+public class SoapEnvelopeBuilder {
 
-    soapEnvelope.append(DematOBPConstants.SOAP_ENVELOPE_START)
-                .append(DematOBPConstants.SOAP_HEADER)
-                .append(DematOBPConstants.SOAP_BODY_START)
-                .append(DematOBPConstants.DEMAT_LANDING_PAGE_START)
-                .append(DematOBPConstants.ARG_START)
-                .append(DematOBPConstants.BANK_CODE_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_BANK_CODE)
-                .append(DematOBPConstants.BANK_CODE_END)
-                .append(DematOBPConstants.CHANNEL_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_CHANNEL)
-                .append(DematOBPConstants.CHANNEL_END)
-                .append(DematOBPConstants.TRANSACTING_PARTY_CODE_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_TX_PARTY_CD)
-                .append(DematOBPConstants.TRANSACTING_PARTY_CODE_END)
-                .append(DematOBPConstants.TRANSACTION_BRANCH_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_TX_BRANCH)
-                .append(DematOBPConstants.TRANSACTION_BRANCH_END)
-                .append(DematOBPConstants.USER_ID_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_USER_ID)
-                .append(DematOBPConstants.USER_ID_END)
-                .append(DematOBPConstants.EXTERNAL_REFERENCE_NO_START)
-                .append(refNo)
-                .append(DematOBPConstants.EXTERNAL_REFERENCE_NO_END)
-                .append(DematOBPConstants.ARG_END)
-                .append(DematOBPConstants.ARG1_START)
-                .append(DematOBPConstants.MSGHDR_START)
-                .append(DematOBPConstants.MSG_TP_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_MSG_TP)
-                .append(DematOBPConstants.MSG_TP_END)
-                .append(DematOBPConstants.REQAPP_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_REQAPP)
-                .append(DematOBPConstants.REQAPP_END)
-                .append(DematOBPConstants.REQTMSTMP_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_REQTMSTMP)
-                .append(DematOBPConstants.REQTMSTMP_END)
-                .append(DematOBPConstants.MSGHDR_END)
-                .append(DematOBPConstants.REQDTLS_START)
-                .append(DematOBPConstants.CUSTID_START)
-                .append(userId)
-                .append(DematOBPConstants.CUSTID_END)
-                .append(DematOBPConstants.INCLPLGBAL_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_INCLPLGBAL)
-                .append(DematOBPConstants.INCLPLGBAL_END)
-                .append(DematOBPConstants.INCLPVAL_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_INCLPVAL)
-                .append(DematOBPConstants.INCLPVAL_END)
-                .append(DematOBPConstants.INCLPVANAL_START)
-                .append(DematOBPConstants.OBP_DEMAT_LANDING_PAGE_INCLPVANAL)
-                .append(DematOBPConstants.INCLPVANAL_END)
-                .append(DematOBPConstants.REGREFNO_START)
-                .append(refNo)
-                .append(DematOBPConstants.REGREFNO_END)
-                .append(DematOBPConstants.REQDTLS_END)
-                .append(DematOBPConstants.ARG1_END)
-                .append(DematOBPConstants.DEMAT_LANDING_PAGE_END)
-                .append(DematOBPConstants.SOAP_BODY_END)
-                .append(DematOBPConstants.SOAP_ENVELOPE_END);
-} catch (JSONException je) {
-    return soapEnvelope.toString();
+    @Autowired
+    private DematProperties dematProperties;
+
+    public String buildSoapEnvelope(String userId, String refNo) {
+        StringBuilder soapEnvelope = new StringBuilder();
+
+        try {
+            soapEnvelope.append(dematProperties.soapEnvelopeStart)
+                        .append(dematProperties.soapHeader)
+                        .append(dematProperties.soapBodyStart)
+                        .append(dematProperties.dematLandingPageStart)
+                        .append(dematProperties.argStart)
+                        .append(dematProperties.bankCodeStart)
+                        .append(dematProperties.obpDematLandingPageBankCode)
+                        .append(dematProperties.bankCodeEnd)
+                        .append(dematProperties.channelStart)
+                        .append(dematProperties.obpDematLandingPageChannel)
+                        .append(dematProperties.channelEnd)
+                        .append(dematProperties.transactingPartyCodeStart)
+                        .append(dematProperties.obpDematLandingPageTxPartyCd)
+                        .append(dematProperties.transactingPartyCodeEnd)
+                        .append(dematProperties.transactionBranchStart)
+                        .append(dematProperties.obpDematLandingPageTxBranch)
+                        .append(dematProperties.transactionBranchEnd)
+                        .append(dematProperties.userIdStart)
+                        .append(dematProperties.obpDematLandingPageUserId)
+                        .append(dematProperties.userIdEnd)
+                        .append(dematProperties.externalReferenceNoStart)
+                        .append(refNo)
+                        .append(dematProperties.externalReferenceNoEnd)
+                        .append(dematProperties.argEnd)
+                        .append(dematProperties.arg1Start)
+                        .append(dematProperties.msghdrStart)
+                        .append(dematProperties.msgTpStart)
+                        .append(dematProperties.obpDematLandingPageMsgTp)
+                        .append(dematProperties.msgTpEnd)
+                        .append(dematProperties.reqappStart)
+                        .append(dematProperties.obpDematLandingPageReqapp)
+                        .append(dematProperties.reqappEnd)
+                        .append(dematProperties.reqtmstmpStart)
+                        .append(dematProperties.obpDematLandingPageReqtmstmp)
+                        .append(dematProperties.reqtmstmpEnd)
+                        .append(dematProperties.msghdrEnd)
+                        .append(dematProperties.reqdtlsStart)
+                        .append(dematProperties.custidStart)
+                        .append(userId)
+                        .append(dematProperties.custidEnd)
+                        .append(dematProperties.inclplgbalStart)
+                        .append(dematProperties.obpDematLandingPageInclplgbal)
+                        .append(dematProperties.inclplgbalEnd)
+                        .append(dematProperties.inclpvalStart)
+                        .append(dematProperties.obpDematLandingPageInclpval)
+                        .append(dematProperties.inclpvalEnd)
+                        .append(dematProperties.inclpvanalStart)
+                        .append(dematProperties.obpDematLandingPageInclpvanal)
+                        .append(dematProperties.inclpvanalEnd)
+                        .append(dematProperties.regrefnoStart)
+                        .append(refNo)
+                        .append(dematProperties.regrefnoEnd)
+                        .append(dematProperties.reqdtlsEnd)
+                        .append(dematProperties.arg1End)
+                        .append(dematProperties.dematLandingPageEnd)
+                        .append(dematProperties.soapBodyEnd)
+                        .append(dematProperties.soapEnvelopeEnd);
+
+        } catch (JSONException je) {
+            // Handle exception if necessary
+        }
+
+        return soapEnvelope.toString();
+    }
 }
-
