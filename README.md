@@ -1,41 +1,31 @@
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
+private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
-public class PercentageCalculator {
-
-    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-
-    public static Double percentage(BigDecimal base, BigDecimal pct) {
-        if (base.intValue() == 0) {
+    public static double calculatePercentage(BigDecimal base, BigDecimal pct) {
+        if (base.compareTo(BigDecimal.ZERO) == 0) {
             return 0.0;
         }
         
-        BigDecimal result = base.divide(pct, new MathContext(10)).multiply(ONE_HUNDRED);
+        // Calculate the percentage with rounding for calculation only
+        BigDecimal result = base.multiply(ONE_HUNDRED).divide(pct, 10, BigDecimal.ROUND_HALF_UP);
+
+        // Convert to string without scientific notation
         String resultStr = result.toPlainString();
-        int decimalPointIndex = resultStr.indexOf('.');
-        
-        // Ensure we have a decimal point and at least 2 decimal places
-        if (decimalPointIndex != -1) {
-            int decimals = resultStr.length() - decimalPointIndex - 1;
-            if (decimals >= 2) {
-                resultStr = resultStr.substring(0, decimalPointIndex + 3); // include decimal point and two decimal places
-            } else {
-                // Add zeros if necessary
-                resultStr += "0".repeat(2 - decimals);
-            }
-        } else {
-            // If no decimal point, add ".00"
-            resultStr += ".00";
+
+        // Split into integer and fractional parts
+        String[] parts = resultStr.split("\\.");
+        String integerPart = parts[0];
+        String fractionalPart = (parts.length > 1) ? parts[1] : "00";
+
+        // Ensure two decimal places
+        if (fractionalPart.length() > 2) {
+            fractionalPart = fractionalPart.substring(0, 2);
+        } else if (fractionalPart.length() < 2) {
+            fractionalPart = fractionalPart + "0";
         }
 
-        return Double.valueOf(resultStr);
-    }
+        // Combine integer and fractional parts with a decimal point
+        resultStr = integerPart + "." + fractionalPart;
 
-    public static void main(String[] args) {
-        BigDecimal base = new BigDecimal("50");
-        BigDecimal pct = new BigDecimal("200");
-
-        System.out.println(percentage(base, pct)); // Expected output: 25.00
+        // Convert back to double
+        return Double.parseDouble(resultStr);
     }
-}
