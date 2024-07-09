@@ -39,16 +39,23 @@ public class ViewStatementRestControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        dematAccDetailsListRequest = new DematAccDetailsListRequest(); // Initialize with required fields
+        dematAccDetailsListRequest = new DematAccDetailsListRequest();
+        dematAccDetailsListRequest.setHashUserId("testUserId");
     }
 
     @Test
     void testGetDematAccDetails_whenSuccess() throws Exception {
-        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenReturn(new DematLandingPageResponse());
+        DematLandingPageResponse expectedResponse = new DematLandingPageResponse();
+        expectedResponse.setStatus("success");
+        expectedResponse.setMessage("Details retrieved successfully");
+        
+        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenReturn(expectedResponse);
 
         ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("success", response.getBody().getStatus());
+        assertEquals("Details retrieved successfully", response.getBody().getMessage());
     }
 
     @Test
@@ -66,5 +73,23 @@ public class ViewStatementRestControllerTest {
         ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    }
+
+    @Test
+    void testDematAccDetailsListRequest() {
+        DematAccDetailsListRequest request = new DematAccDetailsListRequest();
+        request.setHashUserId("testUserId");
+        
+        assertEquals("testUserId", request.getHashUserId());
+    }
+
+    @Test
+    void testDematLandingPageResponse() {
+        DematLandingPageResponse response = new DematLandingPageResponse();
+        response.setStatus("success");
+        response.setMessage("Details retrieved successfully");
+        
+        assertEquals("success", response.getStatus());
+        assertEquals("Details retrieved successfully", response.getMessage());
     }
 }
