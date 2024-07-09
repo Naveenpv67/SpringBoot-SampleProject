@@ -1,42 +1,70 @@
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-public class ObpHelperServiceTest {
+import javax.servlet.http.HttpServletRequest;
+
+public class ViewStatementRestControllerTest {
 
     @Mock
-    private ManagedChannel managedChannel;
+    private DematLandingPageService dematLandingPageService;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private UserDetailsDAO userDetailsDAO;
+
+    @Mock
+    private TransactionLogging transactionLogging;
+
+    @Mock
+    private BlackoutHelper blackoutHelper;
+
+    @Mock
+    private HttpServletRequest mockedRequest;
 
     @InjectMocks
-    private ObpHelperService obpHelperService;
+    private ViewStatementRestController viewStatementRestController;
+
+    private DematAccDetailsListRequest dematAccDetailsListRequest;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        dematAccDetailsListRequest = new DematAccDetailsListRequest(); // Initialize with required fields
     }
 
     @Test
-    void testGetObpCaller() {
-        String stringRequest = "testRequest";
-        String appId = "testAppId";
-        ObpApiType apiType = ObpApiType.SOME_API_TYPE;
+    void testGetDematAccDetails_whenSuccess() throws Exception {
+        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenReturn(new DematLandingPageResponse());
 
-        ObpGrpcUtil obpGrpcUtil = obpHelperService.getObpCaller(stringRequest, appId, apiType);
+        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
 
-        assertNotNull(obpGrpcUtil);
-        assertEquals(appId, obpGrpcUtil.getAppId());
-        assertEquals(managedChannel, obpGrpcUtil.getManagedChannel());
-        assertEquals(HttpMethod.POST.name(), obpGrpcUtil.getMethod());
-        assertTrue(obpGrpcUtil.getQuery().isEmpty());
-        assertTrue(obpGrpcUtil.getHeaders().isEmpty());
-        assertEquals(apiType, obpGrpcUtil.getApiType());
-        assertEquals(stringRequest, obpGrpcUtil.getBody());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetDematAccDetails_whenBadRequest() throws Exception {
+        // Simulate a bad request by sending null request object
+        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", null);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testGetDematAccDetails_whenInternalServerError() throws Exception {
+        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenThrow(new RuntimeException("Internal Error"));
+
+        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     }
 }
