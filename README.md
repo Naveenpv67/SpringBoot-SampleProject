@@ -1,95 +1,80 @@
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+Certainly! Here is a flow diagram to visualize the process of handling the cache and third-party data retrieval:
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+1. **Start**: User makes a request to access the DMAT holding statement.
+2. **Extract Data**: Extract `Customer ID`, `Account Number`, and `Session Token` from the request.
+3. **Check Cache**: Check if the combination of `Customer ID`, `Account Number`, and `Session Token` exists in Aerospike.
+    - **Yes**: Return cached data.
+    - **No**: Continue to the next step.
+4. **Check Existing Cache for Customer ID and Account Number**: 
+    - **Yes**: If the combination exists but the session token is different, delete the old cache entry.
+    - **No**: Proceed to fetch new data.
+5. **Fetch Data**: Call the third-party service to fetch the DMAT holding statement.
+6. **Store Data**: Store the new data in Aerospike with the `Customer ID`, `Account Number`, and `Session Token`.
+7. **Return Data**: Return the newly fetched data to the user.
+8. **End**.
 
-import javax.servlet.http.HttpServletRequest;
+Here's a visual representation of the flow:
 
-public class ViewStatementRestControllerTest {
+```plaintext
+                +-------------------------------+
+                |           Start               |
+                +-------------------------------+
+                             |
+                             v
+                +-------------------------------+
+                | Extract Customer ID, Account  |
+                | Number, and Session Token     |
+                +-------------------------------+
+                             |
+                             v
+                +-------------------------------+
+                |  Check if the combination of  |
+                |  Customer ID, Account Number, |
+                |  and Session Token exists in  |
+                |  Aerospike                    |
+                +-------------------------------+
+                             |
+         +-------------------+-------------------+
+         |                                       |
+         v                                       v
++-----------------------+              +-----------------------------+
+| Combination Exists    |              | Combination Does Not Exist  |
+| Return Cached Data    |              |                             |
++-----------------------+              +-----------------------------+
+                                      | Check Existing Cache for     |
+                                      | Customer ID and Account      |
+                                      | Number                       |
+                                      +-----------------------------+
+                                                 |
+                                      +----------+----------+
+                                      |                     |
+                                      v                     v
+                          +-------------------+     +---------------------+
+                          | Combination Exists|     | Combination Does Not|
+                          | Delete Old Entry  |     | Exist               |
+                          +-------------------+     +---------------------+
+                                                         |
+                                                         v
+                                      +----------------------------------+
+                                      | Fetch Data from Third-Party      |
+                                      +----------------------------------+
+                                                         |
+                                                         v
+                                      +----------------------------------+
+                                      | Store Data in Aerospike with     |
+                                      | Customer ID, Account Number,     |
+                                      | and Session Token                |
+                                      +----------------------------------+
+                                                         |
+                                                         v
+                                      +----------------------------------+
+                                      | Return Fetched Data to User      |
+                                      +----------------------------------+
+                                                         |
+                                                         v
+                                      +----------------------------------+
+                                      |               End                |
+                                      +----------------------------------+
+```
 
-    @Mock
-    private DematLandingPageService dematLandingPageService;
-
-    @Mock
-    private UserService userService;
-
-    @Mock
-    private UserDetailsDAO userDetailsDAO;
-
-    @Mock
-    private TransactionLogging transactionLogging;
-
-    @Mock
-    private BlackoutHelper blackoutHelper;
-
-    @Mock
-    private HttpServletRequest mockedRequest;
-
-    @InjectMocks
-    private ViewStatementRestController viewStatementRestController;
-
-    private DematAccDetailsListRequest dematAccDetailsListRequest;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        dematAccDetailsListRequest = new DematAccDetailsListRequest();
-        dematAccDetailsListRequest.setHashUserId("testUserId");
-    }
-
-    @Test
-    void testGetDematAccDetails_whenSuccess() throws Exception {
-        DematLandingPageResponse expectedResponse = new DematLandingPageResponse();
-        expectedResponse.setStatus("success");
-        expectedResponse.setMessage("Details retrieved successfully");
-        
-        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenReturn(expectedResponse);
-
-        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals("success", response.getBody().getStatus());
-        assertEquals("Details retrieved successfully", response.getBody().getMessage());
-    }
-
-    @Test
-    void testGetDematAccDetails_whenBadRequest() throws Exception {
-        // Simulate a bad request by sending null request object
-        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", null);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    }
-
-    @Test
-    void testGetDematAccDetails_whenInternalServerError() throws Exception {
-        when(dematLandingPageService.getDematAccDetails(anyString(), anyString(), any())).thenThrow(new RuntimeException("Internal Error"));
-
-        ResponseEntity<DematLandingPageResponse> response = viewStatementRestController.getDematAccDetails(mockedRequest, "giga123", "EN", dematAccDetailsListRequest);
-
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    }
-
-    @Test
-    void testDematAccDetailsListRequest() {
-        DematAccDetailsListRequest request = new DematAccDetailsListRequest();
-        request.setHashUserId("testUserId");
-        
-        assertEquals("testUserId", request.getHashUserId());
-    }
-
-    @Test
-    void testDematLandingPageResponse() {
-        DematLandingPageResponse response = new DematLandingPageResponse();
-        response.setStatus("success");
-        response.setMessage("Details retrieved successfully");
-        
-        assertEquals("success", response.getStatus());
-        assertEquals("Details retrieved successfully", response.getMessage());
-    }
-}
+This flow ensures that data is fetched and cached appropriately, reducing unnecessary third-party calls and maintaining data freshness.
