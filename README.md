@@ -1,38 +1,35 @@
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.cloud.sleuth.instrument.web.client.TraceRestTemplateInterceptor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+public class PaginationUtil {
 
-import java.util.List;
+    public static <T> List<T> paginateAndSort(List<T> data, int pageNo, int pageSize, String sortField, String sortDirection) {
+        // Calculate the number of elements to skip
+        long skip = (long) (pageNo - 1) * pageSize;
+        
+        // Determine the limit
+        int limit = pageSize;
 
-@Configuration
-public class AppConfig {
+        // Create a comparator based on the sort field and direction
+        Comparator<T> comparator = getComparator(sortField, sortDirection);
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
-        return restTemplateBuilder
-                .additionalInterceptors(new TraceRestTemplateInterceptor())
-                .build();
+        // Create a stream and optionally sort it if a comparator is provided
+        return (comparator == null ? data.parallelStream() : data.parallelStream().sorted(comparator))
+                .skip(skip)    // Skip the first 'skip' elements
+                .limit(limit)  // Limit the number of elements to 'limit'
+                .collect(Collectors.toList()); // Collect the results into a list
     }
-}
 
+    private static <T> Comparator<T> getComparator(String sortField, String sortDirection) {
+        return (o1, o2) -> {
+            try {
+                Field field = o1.getClass().getDeclaredField(sortField);
+                field.setAccessible(true);
+                Comparable value1 = (Comparable) field.get(o1);
+                Comparable value2 = (Comparable) field.get(o2);
 
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-starter-sleuth</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.zipkin.reporter2</groupId>
-        <artifactId>zipkin-reporter-brave</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-starter-zipkin</artifactId>
-    </dependency>
-</dependencies>
+                return "desc".equalsIgnoreCase(sortDirection) 
+                        ? value2.compareTo(value1) 
+                        : value1.compareTo(value2);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to sort by field: " + sortField, e);
+            }
+        };
+    }
