@@ -1,10 +1,14 @@
 <configuration>
 
+    <!-- Define variables for reuse -->
+    <property name="LOG_FILE_PATH" value="${LOG_FILE_PATH:-logs}"/>
+    <property name="SERVICE_NAME" value="${spring.application.name:-application-logs}"/>
+
     <!-- Info log file appender -->
     <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/info.log</file>
+        <file>${LOG_FILE_PATH}/${SERVICE_NAME}-info.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/info.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_FILE_PATH}/${SERVICE_NAME}-info.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -19,9 +23,9 @@
 
     <!-- Debug log file appender -->
     <appender name="DEBUG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/debug.log</file>
+        <file>${LOG_FILE_PATH}/${SERVICE_NAME}-debug.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/debug.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_FILE_PATH}/${SERVICE_NAME}-debug.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -36,9 +40,9 @@
 
     <!-- Error log file appender -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/error.log</file>
+        <file>${LOG_FILE_PATH}/${SERVICE_NAME}-error.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_FILE_PATH}/${SERVICE_NAME}-error.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -52,10 +56,13 @@
     </appender>
 
     <!-- Root logger configuration -->
-    <root level="DEBUG">  <!-- Changed from INFO to DEBUG -->
+    <root level="DEBUG">
         <appender-ref ref="INFO_FILE"/>
         <appender-ref ref="DEBUG_FILE"/>
         <appender-ref ref="ERROR_FILE"/>
     </root>
 
 </configuration>
+
+
+LOG_FILE_PATH=logs
