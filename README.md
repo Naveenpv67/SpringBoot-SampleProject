@@ -1,35 +1,61 @@
-public class PaginationUtil {
+<configuration>
 
-    public static <T> List<T> paginateAndSort(List<T> data, int pageNo, int pageSize, String sortField, String sortDirection) {
-        // Calculate the number of elements to skip
-        long skip = (long) (pageNo - 1) * pageSize;
-        
-        // Determine the limit
-        int limit = pageSize;
+    <!-- Info log file appender -->
+    <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/info.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
 
-        // Create a comparator based on the sort field and direction
-        Comparator<T> comparator = getComparator(sortField, sortDirection);
+    <!-- Debug log file appender -->
+    <appender name="DEBUG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/debug.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/debug.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
 
-        // Create a stream and optionally sort it if a comparator is provided
-        return (comparator == null ? data.parallelStream() : data.parallelStream().sorted(comparator))
-                .skip(skip)    // Skip the first 'skip' elements
-                .limit(limit)  // Limit the number of elements to 'limit'
-                .collect(Collectors.toList()); // Collect the results into a list
-    }
+    <!-- Error log file appender -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
 
-    private static <T> Comparator<T> getComparator(String sortField, String sortDirection) {
-        return (o1, o2) -> {
-            try {
-                Field field = o1.getClass().getDeclaredField(sortField);
-                field.setAccessible(true);
-                Comparable value1 = (Comparable) field.get(o1);
-                Comparable value2 = (Comparable) field.get(o2);
+    <!-- Root logger configuration -->
+    <root level="DEBUG">  <!-- Changed from INFO to DEBUG -->
+        <appender-ref ref="INFO_FILE"/>
+        <appender-ref ref="DEBUG_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
 
-                return "desc".equalsIgnoreCase(sortDirection) 
-                        ? value2.compareTo(value1) 
-                        : value1.compareTo(value2);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException("Failed to sort by field: " + sortField, e);
-            }
-        };
-    }
+</configuration>
