@@ -282,3 +282,8 @@ public class DematHoldingController {
         return dematHoldingService.getSortedSimilarityScores();
     }
 }
+
+    @Value("${similarity.threshold}")
+    private double similarityThreshold;
+
+  return similarity >= similarityThreshold; // Use the threshold from application.properties
