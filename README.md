@@ -1,6 +1,7 @@
 package com.example.helloworld.service;
 
 import java.text.Normalizer;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,7 +70,7 @@ public class DematHoldingService {
 			"SRF LIMITED-EQ", "TATA CHEMICALS LIMITED-EQ", "TATA COMMUNICATIONS LIMITED-EQ",
 			"TATA CONSUMER PRODUCTS LIMITED-EQ", "TATA ELXSI LIMITED-EQ", "TATA POWER COMPANY LIMITED-EQ",
 			"TATA PROJECTS LIMITED-EQ", "TATA REALTY AND INFRASTRUCTURE LIMITED-EQ", "TATA TECHNOLOGIES LIMITED-EQ",
-			"TATA TELECOM LIMITED-EQ", "TORRENT PHARMACEUTICALS LIMITED-EQ",
+			"TATA TELECOM LIMITED-EQ", "TORRENT PHARMACEUTICALS LIMITED-EQ", "ABC XYZ TECHX", "TECHX ABC XYZ", "ABC TECHX XYZ",
 			// Add more company names here to reach 500
 	};
 
@@ -105,31 +106,42 @@ public class DematHoldingService {
 	 *                                  characters
 	 */
 	public List<DematHolding> searchByField(String field, String query) {
-		if (query == null || query.isEmpty()) {
-			return new ArrayList<>();
-		}
+	    if (query == null || query.isEmpty()) {
+	        return new ArrayList<>();
+	    }
 
-		if (query.length() < 3) {
-			throw new IllegalArgumentException("Query length must be at least 3 characters.");
-		}
+	    if (query.length() < 3) {
+	        throw new IllegalArgumentException("Query length must be at least 3 characters.");
+	    }
 
-		String lowerCaseQuery = normalize(query.toLowerCase());
-		String[] keywords = lowerCaseQuery.split("\\s+");
+	    String lowerCaseQuery = normalize(query.toLowerCase());
+	    String[] keywords = lowerCaseQuery.split("\\s+");
 
-		return dematHoldingsList.stream().filter(holding -> {
-			Optional<String> fieldValueOpt = getFieldValue(holding, field);
-			if (!fieldValueOpt.isPresent())
-				return false;
+	    return dematHoldingsList.stream()
+	        .filter(holding -> {
+	            Optional<String> fieldValueOpt = getFieldValue(holding, field);
+	            if (!fieldValueOpt.isPresent()) return false;
 
-			String fieldValue = fieldValueOpt.get();
-			boolean match = containsAllKeywords(fieldValue, keywords) || isFuzzyMatch(fieldValue, lowerCaseQuery);
-			if (match) {
-				double similarity = calculateSimilarity(fieldValue, lowerCaseQuery);
-				similarityScores.put(fieldValue, similarity);
-			}
-			return match;
-		}).collect(Collectors.toList());
+	            String fieldValue = fieldValueOpt.get();
+	            boolean match = containsAllKeywords(fieldValue, keywords) || isFuzzyMatch(fieldValue, lowerCaseQuery);
+	            if (match) {
+	                double similarity = calculateSimilarity(fieldValue, lowerCaseQuery);
+	                similarityScores.put(fieldValue, similarity);
+	            }
+	            return match;
+	        })
+	        .sorted((h1, h2) -> {
+	            String fieldValue1 = getFieldValue(h1, field).orElse("");
+	            String fieldValue2 = getFieldValue(h2, field).orElse("");
+	            boolean startsWith1 = fieldValue1.startsWith(lowerCaseQuery);
+	            boolean startsWith2 = fieldValue2.startsWith(lowerCaseQuery);
+	            if (startsWith1 && !startsWith2) return -1;
+	            if (!startsWith1 && startsWith2) return 1;
+	            return Double.compare(similarityScores.getOrDefault(fieldValue2, 0.0), similarityScores.getOrDefault(fieldValue1, 0.0));
+	        })
+	        .collect(Collectors.toList());
 	}
+
 
 	/**
 	 * Retrieves the normalized value of a specified field from a Demat Holding.
@@ -247,43 +259,3 @@ public class DematHoldingService {
 		}
 	}
 }
-
-
-package com.example.helloworld.rest;
-
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.example.helloworld.model.DematHolding;
-import com.example.helloworld.service.DematHoldingService;
-
-@RestController
-@RequestMapping("/api/dematHoldings")
-public class DematHoldingController {
-
-    private final DematHoldingService dematHoldingService;
-
-    public DematHoldingController(DematHoldingService dematHoldingService) {
-        this.dematHoldingService = dematHoldingService;
-    }
-
-    @GetMapping("/search")
-    public List<DematHolding> search(@RequestParam String field, @RequestParam String query) {
-        return dematHoldingService.searchByField(field, query);
-    }
-    
-    @GetMapping("/similarity-scores")
-    public List<Map.Entry<String, Double>> getSimilarityScores() {
-        return dematHoldingService.getSortedSimilarityScores();
-    }
-}
-
-    @Value("${similarity.threshold}")
-    private double similarityThreshold;
-
-  return similarity >= similarityThreshold; // Use the threshold from application.properties
