@@ -1,51 +1,41 @@
-import com.google.auth.oauth2.GoogleCredentials;
-import javax.net.ssl.*;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.security.cert.X509Certificate;
-import java.util.Collections;
+package com.example.paytransaction.service;
 
-public class AccessTokenGenerator {
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-    static {
-        disableSslVerification();
-    }
+import com.example.paytransaction.dto.PaymentRequest;
+import com.example.paytransaction.repo.ClientPaymentRequestDAO;
 
-    public static String generateAccessToken() throws IOException {
-        GoogleCredentials credentials = GoogleCredentials.fromStream(new FileInputStream("path/to/credentials.json"))
-                .createScoped(Collections.singletonList("https://www.googleapis.com/auth/cloud-platform"));
+import lombok.extern.slf4j.Slf4j;
 
-        credentials.refreshIfExpired();
-        return credentials.getAccessToken().getTokenValue();
-    }
+@Slf4j
+@Service
+public class PaymentService {
 
-    private static void disableSslVerification() {
-        try {
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() { return null; }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) { }
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) { }
-                }
-            };
+	@Autowired
+	private ClientPaymentRequestDAO clientPaymentRequestDAO;
 
-            SSLContext sc = SSLContext.getInstance("TLS");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+	public PaymentResponseTransaction processPaymentRequest(PaymentRequest request) throws CustomException {
+		PaymentResponseTransaction response = new PaymentResponseTransaction();
+		try {
+			// Stage 1: Save the payment request in DB (ClientPaymentRequestEntity)
+			clientPaymentRequestDAO.saveClientPaymentRequestToDatabase(request);
 
-            // Disable hostname verification
-            HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+			// Stage 2: Build Flexcube payload and send request
+			PIDebitCreditRequest flexcubeRequest = createPayloadForFlexcubeFromClientRequest(request);
+			String flexcubeResponse = callFlexcubeApiForPIDebitCredit(flexcubeRequest);
 
-    public static void main(String[] args) {
-        try {
-            String accessToken = generateAccessToken();
-            System.out.println("Access Token: " + accessToken);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+			// Stage 3: Process Flexcube response
+			processFlexcubeApiResponse(flexcubeResponse, request, response);
+
+			// Stage 4: Notify IBMB server about payment status
+			notifyIbmbServerAboutPaymentStatus(request.getPayRequestTransaction());
+
+		} catch (Exception e) {
+			log.error("Error during payment processing", e);
+			throw new CustomException(500, "Failed to process payment");
+		}
+		return response;
+	}
+
 }
