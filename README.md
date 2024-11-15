@@ -1,66 +1,81 @@
-public class FlexcubeOriginatorInfo {
-    private String originatorName;
-    private String originatorAddress;
-    private String originatorLocation;
-    private String originatorCity;
-    private String originatorState;
-    private String originatorCountry;
-    private String originatorPincode;
-    private String originatorType;
-    private String originatorGeocode;
-    private String originatorIp;
-    private String originatorDeviceId;
-    private String originatorOs;
-    private String originatorBrowser;
+import java.util.Map;
+import java.util.HashMap;
 
-    // Getters and setters for all fields
-}
+public enum State {
+    AN("Andaman & Nicobar"),
+    AP("Andhra Pradesh"),
+    AR("Arunachal Pradesh"),
+    AS("Assam"),
+    BR("Bihar"),
+    CH("Chandigarh"),
+    CG("Chhattisgarh"),
+    DN("Dadra and Nagar Haveli"),
+    DD("Daman & Diu"),
+    DL("Delhi"),
+    GA("Goa"),
+    GJ("Gujarat"),
+    HR("Haryana"),
+    HP("Himachal Pradesh"),
+    JK("Jammu & Kashmir"),
+    JH("Jharkhand"),
+    KA("Karnataka"),
+    KL("Kerala"),
+    LD("Lakshadweep"),
+    MP("Madhya Pradesh"),
+    MH("Maharashtra"),
+    MN("Manipur"),
+    ML("Meghalaya"),
+    MZ("Mizoram"),
+    NL("Nagaland"),
+    OR("Odisha"),
+    PY("Puducherry"),
+    PB("Punjab"),
+    RJ("Rajasthan"),
+    SK("Sikkim"),
+    TN("Tamil Nadu"),
+    TG("Telangana"),
+    TR("Tripura"),
+    UP("Uttar Pradesh"),
+    UK("Uttarakhand (Uttranchal)"),
+    WB("West Bengal"),
+    LK("Ladakh");
 
+    private final String stateName;
+    private static final Map<String, State> BY_CODE = new HashMap<>();
+    private static final Map<String, State> BY_NAME = new HashMap<>();
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.sql.Timestamp;
-
-public void saveFlexcubeOrgInfoTransactionToDatabase(FlexcubeOrgInfoRequestOBPDTO transformedRequest, 
-                                                     PaymentRequest paymentRequest, 
-                                                     String orgInfoResponseBody, 
-                                                     String errorCode, 
-                                                     String errorMessage, 
-                                                     ResultEnum result, 
-                                                     int httpStatus) {
-    try {
-        // Parse JSON response to FlexcubeOriginatorInfo model
-        ObjectMapper objectMapper = new ObjectMapper();
-        FlexcubeOriginatorInfo originatorInfo = objectMapper.readValue(orgInfoResponseBody, FlexcubeOriginatorInfo.class);
-
-        // Assuming entity is an instance of your database model
-        entity.setOriginatorName(transformedRequest.getOriginatorName());
-        entity.setOriginatorAddress(transformedRequest.getOriginatorAddress());
-        entity.setOriginatorLocation(transformedRequest.getOriginatorLocation());
-        entity.setOriginatorCity(transformedRequest.getOriginatorCity());
-        entity.setOriginatorState(transformedRequest.getOriginatorState());
-        entity.setOriginatorCountry(transformedRequest.getOriginatorCountry());
-        entity.setOriginatorPincode(transformedRequest.getOriginatorPincode());
-        entity.setOriginatorType(transformedRequest.getOriginatorType());
-        entity.setOriginatorGeocode(transformedRequest.getOriginatorGeocode());
-        entity.setOriginatorIp(transformedRequest.getOriginatorIp());
-        entity.setOriginatorDeviceId(transformedRequest.getOriginatorDeviceId());
-        entity.setOriginatorOs(transformedRequest.getOriginatorOs());
-        entity.setOriginatorBrowser(transformedRequest.getOriginatorBrowser());
-
-        // Timestamp Handling
-        Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
-        entity.setRequestTimestamp(currentTimestamp);
-
-        if (result == ResultEnum.SUCCESS) {
-            // Set response timestamp only if successful
-            entity.setResponseTimestamp(currentTimestamp);
+    // Static block to initialize the lookup maps
+    static {
+        for (State state : values()) {
+            BY_CODE.put(state.name(), state);
+            BY_NAME.put(state.getStateName().toLowerCase(), state); // Case-insensitive lookup
         }
+    }
 
-        // Save entity to database (assuming you have a save method)
-        save(entity);
+    State(String stateName) {
+        this.stateName = stateName;
+    }
 
-    } catch (Exception e) {
-        // Handle exception
-        e.printStackTrace();
+    public String getStateName() {
+        return stateName;
+    }
+
+    // Lookup by code (O(1))
+    public static State getByCode(String code) {
+        return BY_CODE.get(code);
+    }
+
+    // Lookup by name (O(1) with map)
+    public static State getByName(String name) {
+        return BY_NAME.get(name.toLowerCase());
+    }
+
+    // Unified lookup: Toggle strategy
+    public static State getBy(String input, boolean searchByCode) {
+        if (searchByCode) {
+            return getByCode(input);
+        } else {
+            return getByName(input);
+        }
     }
 }
