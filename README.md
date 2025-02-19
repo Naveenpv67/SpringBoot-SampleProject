@@ -1,93 +1,97 @@
-private PITxnStsInqResponseDTO parseTxnStsInqResponseBody(
-        String transformedRequest, 
-        PITxnStsInqRequestDTO request, 
-        String piTxnStsInqResponseBody, 
-        int statusCode) {
+private PITxnStsInqResponseDTO parseTxnStsInqResponseBody(String transformedRequest, 
+                                                          PITxnStsInqRequestDTO request, 
+                                                          String piTxnStsInqResponseBody, 
+                                                          int statusCode) {
 
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    PITxnStsInqResponseDTO piTxnReversalEntity = null;
 
     try {
-        PiTxnStatusInquiryResponse response = 
-                objectMapper.readValue(piTxnStsInqResponseBody, PiTxnStatusInquiryResponse.class);
-        
+        PiTxnStatusInquiryResponse response = objectMapper.readValue(
+                piTxnStsInqResponseBody, PiTxnStatusInquiryResponse.class);
         log.info(AMPSIssuerConstants.OBP_RESPONSE, piTxnStsInqResponseBody);
 
-        // 1. Extract Status object
+        // 1. Check the Status object
         Optional<Status> statusOpt = Optional.ofNullable(response.getStatus());
+        int replyCode = statusOpt.map(Status::getReplyCode).orElse(0);
 
-        // 2. Check if replyCode in Status is non-zero
-        if (statusOpt.map(Status::getReplyCode).filter(code -> code != 0).isPresent()) {
-            String errorCode = statusOpt.map(Status::getErrorCode).orElse("N/A");
-            String errorMessage = statusOpt.map(Status::getReplyText).orElse("No Reply Text");
-            return saveAsFailure(transformedRequest, request, piTxnStsInqResponseBody, 
-                                 errorCode, errorMessage, statusCode, response);
+        if (replyCode != 0) {
+            String replyText = statusOpt.map(Status::getReplyText)
+                    .filter(text -> !text.isEmpty())
+                    .orElse("Payment processing failed due to an unknown error.");
+            String errorCode = statusOpt.map(Status::getErrorCode).orElse("UNKNOWN_ERROR");
+
+            return buildFailureResponse("Failure", errorCode, replyText, response);
         }
 
-        // 3. Check for ResponseString and TransactionStatus
+        // 2. Check the ResponseString and TransactionStatus objects
         Optional<TransactionStatus> transactionStatusOpt = Optional.ofNullable(response.getResponseString())
                 .map(ResponseString::getTransactionStatus);
+        
+        int txnReplyCode = transactionStatusOpt.map(TransactionStatus::getReplyCode).orElse(0);
+        
+        if (txnReplyCode != 0) {
+            String txnReplyText = transactionStatusOpt.map(TransactionStatus::getReplyText)
+                    .filter(text -> !text.isEmpty())
+                    .orElse("Transaction failed due to an unspecified reason.");
+            
+            String txnErrorCode = transactionStatusOpt.map(TransactionStatus::getErrorCode)
+                    .orElse("UNKNOWN_TXN_ERROR");
 
-        // 4. Check if replyCode in TransactionStatus is non-zero
-        if (transactionStatusOpt.map(TransactionStatus::getReplyCode).filter(code -> code != 0).isPresent()) {
-            String errorCode = transactionStatusOpt.map(TransactionStatus::getErrorCode).orElse("N/A");
-            String errorMessage = transactionStatusOpt.map(TransactionStatus::getReplyText).orElse("No Reply Text");
-            return saveAsFailure(transformedRequest, request, piTxnStsInqResponseBody, 
-                                 errorCode, errorMessage, statusCode, response);
+            return buildFailureResponse("Failure", txnErrorCode, txnReplyText, response);
         }
 
-        // 5. Check for PI Transaction Status Inquiry DTO
-        Optional<PiTxnStatusInquiryResDTO> piTxnStatusInquiryResDTOOpt = transactionStatusOpt
-                .map(TransactionStatus::getPiTxnStatusInquiryResDTO);
+        // 3. Check the Originator Transaction Status in PITransactionStatusEnquiryResultDTO
+        Optional<PITransactionStatusEnquiryResultDTO> piResultOpt = 
+                Optional.ofNullable(response.getResponseString())
+                        .map(ResponseString::getTransactionStatus)
+                        .map(TransactionStatus::getPiTransactionStatusEnquiryResultDTO);
 
-        // 6. Evaluate Original Transaction Status
-        if (piTxnStatusInquiryResDTOOpt.map(PiTxnStatusInquiryResDTO::getOrgTransactionStatus)
-                                       .filter("Failure"::equalsIgnoreCase).isPresent()) {
-            String errorCode = piTxnStatusInquiryResDTOOpt.map(PiTxnStatusInquiryResDTO::getOrgErrorCode).orElse("N/A");
-            String errorMessage = piTxnStatusInquiryResDTOOpt.map(PiTxnStatusInquiryResDTO::getOrgErrorDescription)
-                                                             .orElse("No Error Description");
-            return saveAsFailure(transformedRequest, request, piTxnStsInqResponseBody, 
-                                 errorCode, errorMessage, statusCode, response);
+        String orgTransactionStatus = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgTransactionStatus)
+                .orElse("UNKNOWN");
+
+        boolean isOriginatorFailed = "FAILURE".equalsIgnoreCase(orgTransactionStatus);
+
+        if (isOriginatorFailed) {
+            String orgErrorCode = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgErrorCode)
+                    .orElse("UNKNOWN_ORG_ERROR");
+            
+            String orgErrorDescription = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgErrorDescription)
+                    .filter(desc -> !desc.isEmpty())
+                    .orElse("Original transaction failed due to an unspecified error.");
+
+            return buildFailureResponse("Failure", orgErrorCode, orgErrorDescription, response);
         }
 
-        // 7. If all checks pass, mark as success
-        piTxnReversalEntity = piTxnReversalEntityDAO.saveTxnReversalRequest(
-                transformedRequest, request, piTxnStsInqResponseBody, 
-                null, null, ResultEnum.SUCCESS, statusCode, response);
+        // Success Scenario
+        return buildSuccessResponse(orgTransactionStatus, response);
 
     } catch (Exception e) {
         log.error("Error while processing response of PI Txn reversal API Transaction");
         log.error("Error Details: {}", ExceptionUtils.getStackTrace(e));
     }
 
-    return piTxnReversalEntity;
+    return buildFailureResponse("Failure", "PARSING_ERROR", 
+            "Failed to parse payment transaction response.", null);
 }
 
+===
 
+private PITxnStsInqResponseDTO buildFailureResponse(String status, String errorCode, String errorDescription, PiTxnStatusInquiryResponse response) {
+    PITxnStsInqResponseDTO dto = new PITxnStsInqResponseDTO();
+    dto.setOrgTransactionStatus(status);
+    dto.setOrgErrorCode(errorCode);
+    dto.setOrgErrorDescription(errorDescription);
+    dto.setRefUserNo(response != null ? response.getRefUserNo() : "N/A");
+    dto.setOrgDatRequest(response != null ? response.getOrgDatRequest() : "N/A");
+    return dto;
+}
 
-====
-// 6. Evaluate Original Transaction Status with explicit success check
-if (piTxnStatusInquiryResDTOOpt.isPresent()) {
-    String orgTransactionStatus = piTxnStatusInquiryResDTOOpt
-            .map(PiTxnStatusInquiryResDTO::getOrgTransactionStatus)
-            .orElse("Unknown");
-
-    if ("Failure".equalsIgnoreCase(orgTransactionStatus)) {
-        String errorCode = piTxnStatusInquiryResDTOOpt.map(PiTxnStatusInquiryResDTO::getOrgErrorCode).orElse("N/A");
-        String errorMessage = piTxnStatusInquiryResDTOOpt.map(PiTxnStatusInquiryResDTO::getOrgErrorDescription)
-                                                         .orElse("No Error Description");
-        return saveAsFailure(transformedRequest, request, piTxnStsInqResponseBody, 
-                             errorCode, errorMessage, statusCode, response);
-    } else if ("Success".equalsIgnoreCase(orgTransactionStatus)) {
-        // Mark as success only if explicitly 'Success'
-        return piTxnReversalEntityDAO.saveTxnReversalRequest(
-                transformedRequest, request, piTxnStsInqResponseBody, 
-                null, null, ResultEnum.SUCCESS, statusCode, response);
-    } else {
-        // Handle any other status (e.g., Pending, Unknown)
-        String errorCode = "9999"; // Custom error code for unhandled status
-        String errorMessage = "Unhandled Transaction Status: " + orgTransactionStatus;
-        return saveAsFailure(transformedRequest, request, piTxnStsInqResponseBody, 
-                             errorCode, errorMessage, statusCode, response);
-    }
+private PITxnStsInqResponseDTO buildSuccessResponse(String status, PiTxnStatusInquiryResponse response) {
+    PITxnStsInqResponseDTO dto = new PITxnStsInqResponseDTO();
+    dto.setOrgTransactionStatus(status);
+    dto.setOrgErrorCode(""); // No error
+    dto.setOrgErrorDescription(""); // No error message
+    dto.setRefUserNo(response != null ? response.getRefUserNo() : "N/A");
+    dto.setOrgDatRequest(response != null ? response.getOrgDatRequest() : "N/A");
+    return dto;
 }
