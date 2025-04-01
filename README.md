@@ -1,3 +1,26 @@
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import javax.persistence.Embeddable;
+import java.io.Serializable;
+
+@Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode
+public class TptLimitAuditId implements Serializable {
+
+    private String refId;
+    private RequestType requestType;
+
+    // You can add constructors and methods if necessary
+
+}
+
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,66 +37,75 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 public class TptLimitAudit {
 
-    @Id
-    @Column(name = "ref_id", length = 60, nullable = false)
-    private String refId;
+    @EmbeddedId
+    private TptLimitAuditId id;  // Composite primary key (refId and requestType)
 
-    @Id
-    @Enumerated(EnumType.STRING)
-    @Column(name = "request_type", nullable = false)
-    private RequestType requestType;
-
-    // HashCast ID
     @Column(name = "hash_cast_id", length = 60)
-    private String hashCastId;
+    private String hashCastId;  // HashCast ID
 
-    // Channel
     @Column(name = "channel", length = 50)
-    private String channel;
+    private String channel;  // Channel
 
-    // TPT Limit Value
     @Column(name = "tpt_limit_value", length = 50)
-    private String tptLimitValue;
+    private String tptLimitValue;  // TPT Limit Value
 
-    // TPT Limit Result (Enum type can be added here if needed)
     @Enumerated(EnumType.STRING)
     @Column(name = "tpt_limit_result", length = 50)
-    private ResultEnum tptLimitResult;
+    private ResultEnum tptLimitResult;  // TPT Limit Result (Enum)
 
-    // TPT Limit Timestamp
     @Column(name = "tpt_limit_ts")
-    private Timestamp tptLimitTimestamp;
+    private Timestamp tptLimitTimestamp;  // TPT Limit Timestamp
 
-    // Request Payload (JSONB column)
     @Column(name = "request_payload", columnDefinition = "jsonb", length = 3000)
-    private String requestPayload;
+    private String requestPayload;  // Request Payload (JSONB)
 
-    // Response Payload (JSONB column)
     @Column(name = "response_payload", columnDefinition = "jsonb", length = 3000)
-    private String responsePayload;
+    private String responsePayload;  // Response Payload (JSONB)
+
 }
 
 
----
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-CREATE TABLE tpt_limit_audit (
-    ref_id VARCHAR(60) NOT NULL,  -- Part of the composite primary key
-    request_type VARCHAR(50) NOT NULL,  -- Part of the composite primary key
-    hash_cast_id VARCHAR(60),  -- HashCast ID
-    channel VARCHAR(50),  -- Channel
-    tpt_limit_value VARCHAR(50),  -- TPT Limit Value
-    tpt_limit_result VARCHAR(50),  -- TPT Limit Result (Enum type)
-    tpt_limit_ts TIMESTAMP,  -- TPT Limit Timestamp
-    request_payload JSONB,  -- Request Payload (JSONB)
-    response_payload JSONB,  -- Response Payload (JSONB)
-    
-    -- Composite Primary Key
-    CONSTRAINT pk_tpt_limit_audit PRIMARY KEY (ref_id, request_type)
-);
+import javax.persistence.Embeddable;
+import java.io.Serializable;
 
----
+@Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode
+public class TptLimitAuditId implements Serializable {
 
-public enum RequestType {
-    PAYMENT,
-    REQUEST_FETCH
+    private String refId;  // Part of the composite key
+    private RequestType requestType;  // Part of the composite key
+
+    public TptLimitAuditId(String refId, RequestType requestType) {
+        this.refId = refId;
+        this.requestType = requestType;
+    }
+}
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface TptLimitAuditRepository extends JpaRepository<TptLimitAudit, TptLimitAuditId> {
+
+    // Example custom query method to find records by refId and requestType
+    Optional<TptLimitAudit> findByRefIdAndRequestType(String refId, RequestType requestType);
+
+    // Example custom query method to find records by refId (you can modify as needed)
+    List<TptLimitAudit> findByRefId(String refId);
+
+    // Example custom query method to find records by requestType (you can modify as needed)
+    List<TptLimitAudit> findByRequestType(RequestType requestType);
+
+    // Add any additional custom queries you may need
 }
