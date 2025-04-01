@@ -1,97 +1,73 @@
-private PITxnStsInqResponseDTO parseTxnStsInqResponseBody(String transformedRequest, 
-                                                          PITxnStsInqRequestDTO request, 
-                                                          String piTxnStsInqResponseBody, 
-                                                          int statusCode) {
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
-    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+public class PaymentService {
 
-    try {
-        PiTxnStatusInquiryResponse response = objectMapper.readValue(
-                piTxnStsInqResponseBody, PiTxnStatusInquiryResponse.class);
-        log.info(AMPSIssuerConstants.OBP_RESPONSE, piTxnStsInqResponseBody);
+    private final YamlConfig yamlConfig;
 
-        // 1. Check the Status object
-        Optional<Status> statusOpt = Optional.ofNullable(response.getStatus());
-        int replyCode = statusOpt.map(Status::getReplyCode).orElse(0);
-
-        if (replyCode != 0) {
-            String replyText = statusOpt.map(Status::getReplyText)
-                    .filter(text -> !text.isEmpty())
-                    .orElse("Payment processing failed due to an unknown error.");
-            String errorCode = statusOpt.map(Status::getErrorCode).orElse("UNKNOWN_ERROR");
-
-            return buildFailureResponse("Failure", errorCode, replyText, response);
-        }
-
-        // 2. Check the ResponseString and TransactionStatus objects
-        Optional<TransactionStatus> transactionStatusOpt = Optional.ofNullable(response.getResponseString())
-                .map(ResponseString::getTransactionStatus);
-        
-        int txnReplyCode = transactionStatusOpt.map(TransactionStatus::getReplyCode).orElse(0);
-        
-        if (txnReplyCode != 0) {
-            String txnReplyText = transactionStatusOpt.map(TransactionStatus::getReplyText)
-                    .filter(text -> !text.isEmpty())
-                    .orElse("Transaction failed due to an unspecified reason.");
-            
-            String txnErrorCode = transactionStatusOpt.map(TransactionStatus::getErrorCode)
-                    .orElse("UNKNOWN_TXN_ERROR");
-
-            return buildFailureResponse("Failure", txnErrorCode, txnReplyText, response);
-        }
-
-        // 3. Check the Originator Transaction Status in PITransactionStatusEnquiryResultDTO
-        Optional<PITransactionStatusEnquiryResultDTO> piResultOpt = 
-                Optional.ofNullable(response.getResponseString())
-                        .map(ResponseString::getTransactionStatus)
-                        .map(TransactionStatus::getPiTransactionStatusEnquiryResultDTO);
-
-        String orgTransactionStatus = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgTransactionStatus)
-                .orElse("UNKNOWN");
-
-        boolean isOriginatorFailed = "FAILURE".equalsIgnoreCase(orgTransactionStatus);
-
-        if (isOriginatorFailed) {
-            String orgErrorCode = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgErrorCode)
-                    .orElse("UNKNOWN_ORG_ERROR");
-            
-            String orgErrorDescription = piResultOpt.map(PITransactionStatusEnquiryResultDTO::getOrgErrorDescription)
-                    .filter(desc -> !desc.isEmpty())
-                    .orElse("Original transaction failed due to an unspecified error.");
-
-            return buildFailureResponse("Failure", orgErrorCode, orgErrorDescription, response);
-        }
-
-        // Success Scenario
-        return buildSuccessResponse(orgTransactionStatus, response);
-
-    } catch (Exception e) {
-        log.error("Error while processing response of PI Txn reversal API Transaction");
-        log.error("Error Details: {}", ExceptionUtils.getStackTrace(e));
+    public PaymentService(YamlConfig yamlConfig) {
+        this.yamlConfig = yamlConfig;
     }
 
-    return buildFailureResponse("Failure", "PARSING_ERROR", 
-            "Failed to parse payment transaction response.", null);
-}
+    public CompletableFuture<Void> buildRequestMapTemp(PaymentRequestDTO paymentRequestDTO, 
+                                                       PaymentRequest request, 
+                                                       ValidateOTPProjection otpProjection, 
+                                                       PayTxnMasterTable payTxnMasterTable) {
 
-===
+        return CompletableFuture.runAsync(() -> {
+            PayRequestTransaction payRequestTransaction = new PayRequestTransaction();
+            request.setVarMobNo(paymentRequestDTO.getMobileNo());
 
-private PITxnStsInqResponseDTO buildFailureResponse(String status, String errorCode, String errorDescription, PiTxnStatusInquiryResponse response) {
-    PITxnStsInqResponseDTO dto = new PITxnStsInqResponseDTO();
-    dto.setOrgTransactionStatus(status);
-    dto.setOrgErrorCode(errorCode);
-    dto.setOrgErrorDescription(errorDescription);
-    dto.setRefUserNo(response != null ? response.getRefUserNo() : "N/A");
-    dto.setOrgDatRequest(response != null ? response.getOrgDatRequest() : "N/A");
-    return dto;
-}
+            Device device = payRequestTransaction.getDevice();
+            if (device == null) {
+                device = new Device();
+                payRequestTransaction.setDevice(device);
+            }
 
-private PITxnStsInqResponseDTO buildSuccessResponse(String status, PiTxnStatusInquiryResponse response) {
-    PITxnStsInqResponseDTO dto = new PITxnStsInqResponseDTO();
-    dto.setOrgTransactionStatus(status);
-    dto.setOrgErrorCode(""); // No error
-    dto.setOrgErrorDescription(""); // No error message
-    dto.setRefUserNo(response != null ? response.getRefUserNo() : "N/A");
-    dto.setOrgDatRequest(response != null ? response.getOrgDatRequest() : "N/A");
-    return dto;
+            // Process Device Tags using Parallel Stream
+            if (paymentRequestDTO.getDevicetag() != null) {
+                List<PayRequestTransaction.Tag> tags = paymentRequestDTO.getDevicetag()
+                    .parallelStream()
+                    .map(dtoTag -> {
+                        PayRequestTransaction.Tag tag = new PayRequestTransaction.Tag();
+                        tag.setName(dtoTag.getName());  // ✅ Setting Name
+
+                        // Assign Value based on Tag Name
+                        switch (dtoTag.getName()) {
+                            case "OS":
+                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
+                                    ? yamlConfig.getOs() : dtoTag.getValue());
+                                break;
+                            case "APP":
+                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
+                                    ? yamlConfig.getApp() : dtoTag.getValue());
+                                break;
+                            case "IP":
+                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
+                                    ? yamlConfig.getIp() : dtoTag.getValue());
+                                break;
+                            case "ID":
+                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
+                                    ? yamlConfig.getId() : dtoTag.getValue());
+                                break;
+                            case "BROWSER":
+                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
+                                    ? yamlConfig.getBrowser() : dtoTag.getValue());
+                                break;
+                            default:
+                                return null; // Skip invalid tags
+                        }
+
+                        return tag;
+                    })
+                    .filter(tag -> tag != null) // Remove null values
+                    .collect(Collectors.toList());
+
+                device.setTag(tags.toArray(new PayRequestTransaction.Tag[0]));
+            }
+
+            device.setMobile(request.getVarMobNo());
+        });
+    }
 }
