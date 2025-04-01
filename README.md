@@ -1,73 +1,34 @@
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+@Entity
+@Table(name = "tpt_limit_audit")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class TptLimitAudit {
 
-public class PaymentService {
+    @Id
+    @Column(name = "ref_id", length = 60, nullable = false)
+    private String refId;
 
-    private final YamlConfig yamlConfig;
+    // Request Fetch Stage TPT Limit
+    @Column(name = "req_fetch_tpt_limit_val", length = 50)
+    private String reqFetchTptLimitVal;
 
-    public PaymentService(YamlConfig yamlConfig) {
-        this.yamlConfig = yamlConfig;
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "req_fetch_tpt_limit_result", length = 50)
+    private ResultEnum reqFetchTptLimitResult;
 
-    public CompletableFuture<Void> buildRequestMapTemp(PaymentRequestDTO paymentRequestDTO, 
-                                                       PaymentRequest request, 
-                                                       ValidateOTPProjection otpProjection, 
-                                                       PayTxnMasterTable payTxnMasterTable) {
+    @Column(name = "req_fetch_tpt_limit_ts")
+    private Timestamp reqFetchTptLimitTimestamp;
 
-        return CompletableFuture.runAsync(() -> {
-            PayRequestTransaction payRequestTransaction = new PayRequestTransaction();
-            request.setVarMobNo(paymentRequestDTO.getMobileNo());
+    // Pay TPT Limit
+    @Column(name = "pay_tpt_limit_val", length = 50)
+    private String payTptLimitVal;
 
-            Device device = payRequestTransaction.getDevice();
-            if (device == null) {
-                device = new Device();
-                payRequestTransaction.setDevice(device);
-            }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pay_tpt_limit_result", length = 50)
+    private ResultEnum payTptLimitResult;
 
-            // Process Device Tags using Parallel Stream
-            if (paymentRequestDTO.getDevicetag() != null) {
-                List<PayRequestTransaction.Tag> tags = paymentRequestDTO.getDevicetag()
-                    .parallelStream()
-                    .map(dtoTag -> {
-                        PayRequestTransaction.Tag tag = new PayRequestTransaction.Tag();
-                        tag.setName(dtoTag.getName());  // ✅ Setting Name
-
-                        // Assign Value based on Tag Name
-                        switch (dtoTag.getName()) {
-                            case "OS":
-                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
-                                    ? yamlConfig.getOs() : dtoTag.getValue());
-                                break;
-                            case "APP":
-                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
-                                    ? yamlConfig.getApp() : dtoTag.getValue());
-                                break;
-                            case "IP":
-                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
-                                    ? yamlConfig.getIp() : dtoTag.getValue());
-                                break;
-                            case "ID":
-                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
-                                    ? yamlConfig.getId() : dtoTag.getValue());
-                                break;
-                            case "BROWSER":
-                                tag.setValue(dtoTag.getValue() == null || dtoTag.getValue().isEmpty() 
-                                    ? yamlConfig.getBrowser() : dtoTag.getValue());
-                                break;
-                            default:
-                                return null; // Skip invalid tags
-                        }
-
-                        return tag;
-                    })
-                    .filter(tag -> tag != null) // Remove null values
-                    .collect(Collectors.toList());
-
-                device.setTag(tags.toArray(new PayRequestTransaction.Tag[0]));
-            }
-
-            device.setMobile(request.getVarMobNo());
-        });
-    }
+    @Column(name = "pay_tpt_limit_ts")
+    private Timestamp payTptLimitTimestamp;
 }
