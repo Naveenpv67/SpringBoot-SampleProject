@@ -1,28 +1,15 @@
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.sql.Timestamp;
-
-@Service
-public class TptLimitAuditService {
-
-    @Autowired
-    private TptLimitAuditRepository tptLimitAuditRepository;
-
-    public TptLimitAudit saveTptLimitAudit(String refId, RequestType requestType, String hashCastId, 
-                                           String channel, String requestAddition, String responseAddition) {
-        // Create the composite key
-        RefIdAndType id = new RefIdAndType(refId, requestType);
-        
-        // Create entity object
-        TptLimitAudit tptLimitAudit = new TptLimitAudit();
-        tptLimitAudit.setId(id);
-        tptLimitAudit.setHashCastId(hashCastId);
-        tptLimitAudit.setChannel(channel);
-        tptLimitAudit.setRequestAddition(requestAddition);
-        tptLimitAudit.setResponseAddition(responseAddition);
-        tptLimitAudit.setTptLimitTimestamp(new Timestamp(System.currentTimeMillis())); // Current timestamp
-
-        // Save entity in the database
-        return tptLimitAuditRepository.save(tptLimitAudit);
-    }
-}
+CREATE TABLE tpt_limit_audit (
+    ref_id VARCHAR(60) NOT NULL,
+    request_type VARCHAR(50) NOT NULL,
+    hash_cust_id VARCHAR(64),
+    channel VARCHAR(50),
+    channel_id VARCHAR(58),
+    tpt_limit_value VARCHAR(100),
+    tpt_limit_result VARCHAR(50),
+    tpt_limit_ts TIMESTAMP,
+    request_payload JSONB,
+    response_data JSONB,
+    error_code VARCHAR(20),
+    error_message VARCHAR(255),
+    PRIMARY KEY (ref_id, request_type)
+);
