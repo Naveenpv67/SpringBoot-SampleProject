@@ -1,15 +1,18 @@
-CREATE TABLE tpt_limit_audit (
-    ref_id VARCHAR(60) NOT NULL,
-    request_type VARCHAR(50) NOT NULL,
-    hash_cust_id VARCHAR(64),
-    channel VARCHAR(50),
-    channel_id VARCHAR(58),
-    tpt_limit_value VARCHAR(100),
-    tpt_limit_result VARCHAR(50),
-    tpt_limit_ts TIMESTAMP,
-    request_payload JSONB,
-    response_data JSONB,
-    error_code VARCHAR(20),
-    error_message VARCHAR(255),
-    PRIMARY KEY (ref_id, request_type)
-);
+import org.springframework.util.StringUtils;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+private void setResponseErrorDetailsIfEmpty(PaymentResponseTransaction paymentResponseTransaction,
+                                            String nbblErrorMessage, String nbblErrorCode) {
+    if (paymentResponseTransaction == null) return;
+
+    setIfAbsent(paymentResponseTransaction.getErrorMessage(), nbblErrorMessage, paymentResponseTransaction::setErrorMessage);
+    setIfAbsent(paymentResponseTransaction.getErrorCode(), nbblErrorCode, paymentResponseTransaction::setErrorCode);
+}
+
+private void setIfAbsent(String currentValue, String newValue, Consumer<String> setter) {
+    Optional.ofNullable(currentValue)
+            .filter(StringUtils::hasText)
+            .or(() -> Optional.ofNullable(newValue).filter(StringUtils::hasText))
+            .ifPresent(setter);
+}
