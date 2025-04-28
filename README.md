@@ -1,27 +1,73 @@
-Goal1:
-Over the last year, I have successfully delivered key projects including MBR Demat, AMPS, NBBL, Adapter, Issuer Switch Admin Transaction Utility Integration, and Payment Factory with a strong focus on quality and timely delivery. I consistently maintained sprint overrun rates well within the 10% threshold and ensured minimal defect leakage into SIT, staying below the severity one defect benchmark.
+Absolutely, Master! I’m happy to help you set your goals for 2025 and 2026 with an updated focus on your ongoing and upcoming projects, such as NBBL, AMPS, and potentially Issuer Switch. Here’s a draft for your six goals, aligned with the previous year’s structure but adjusted to focus on these projects and your evolving responsibilities.
 
-Additionally, I proactively tracked my work through JIRA task management, adhering to agile best practices and fostering a structured, transparent work culture. I consciously optimized the development process by reducing redundant efforts through smart, modular, and reusable coding practices — leading to better maintainability and reduced rework.
+---
 
-Through continuous learning and hands-on contribution, I ensured that escalations were either avoided or resolved efficiently, staying within the escalation limits set for the period. Overall, my approach balanced both hard work and smart, efficient delivery, contributing positively to the team’s performance and project outcomes.
+### Goal 1: Delivery of Key Projects (NBBL and AMPS)  
+Goal: Drive the successful delivery of the NBBL project (ongoing) and the upcoming AMPS project (2025), ensuring timely execution and high-quality results.  
+Measure:  
+- Less than 10% Sprint Overruns in both NBBL and AMPS.  
+- Less than 5% severity one defects leakage to SIT for both projects.  
+- Maintain no major escalations during project deliveries.  
+Weightage: 20  
 
+---
 
-Goal 2
-I successfully implemented advanced technologies like gRPC, GCP Pub/Sub, Cloud Spanner, and Yugabyte Database, completing multiple POCs with detailed documentation. Developed generic utilities to enhance integration and reduce redundant effort. Maintained proper documentation and JIRA task tracking while continuously focusing on smart, efficient coding practices and contributing to the team’s technical growth.
+### Goal 2: Database Management and Optimization (NBBL, AMPS, and Issuer Switch)  
+Goal: Oversee the optimization and management of the NBBL database and contribute to the database design and implementation for AMPS. Potentially work on Issuer Switch database improvements based on the project needs.  
+Measure:  
+- Successful design and implementation of NBBL and AMPS databases.  
+- Development of backup/restore utilities for Aerospike and database management utilities for AMPS.  
+- Efficient issue switch database optimization, if applicable.  
+Weightage: 20  
 
+---
 
-Goal 3
-I successfully designed and implemented the NBBL database, developed utilities for Aerospike including backup and restore operations, and performed detailed analysis and documentation of Issuer Switch tables.
+### Goal 3: Cloud Infrastructure and Deployment (NBBL, AMPS, and OpenShift)  
+Goal: Master cloud infrastructure processes and ensure smooth deployment of services in OpenShift for both NBBL and AMPS projects.  
+Measure:  
+- Independent deployment of services for NBBL and AMPS in OpenShift.  
+- Completion of cloud-related POCs for the projects.  
+- Ongoing monitoring and optimizing deployment pipelines using Jenkins.  
+Weightage: 20  
 
-Consistently delivered Payment Factory programs (AMPS, BMS, UPI Issuer Switch) with no major defects at the QA stage. Maintained high code quality while adhering to product architecture standards and JIRA task management. Focused on productivity, smart code practices, and continuous learning to strengthen my expertise in the banking domain.
+---
 
-Goal 4
-I independently handled service deployments in OpenShift, managed Jenkins pipelines, and worked with Enterprise Quay and JFrog repositories. Successfully completed multiple cloud-related POCs on OpenShift and GCP, with proper documentation. Focused on optimizing deployment processes and improving delivery speed through smart, reusable scripts and configurations, while maintaining standard practices via JIRA task tracking and team collaboration.
+### Goal 4: Technical Excellence and Innovation (AMPS and NBBL)  
+Goal: Lead the implementation of advanced technologies, such as gRPC, GCP Pub/Sub, Cloud Spanner, and Yugabyte Database, for both NBBL and AMPS projects.  
+Measure:  
+- Successful implementation of gRPC, GCP Pub/Sub, and Cloud Spanner within the projects.  
+- Creation and documentation of generic utilities for better system integration.  
+- Completion of all POCs and ensuring that they align with project requirements.  
+Weightage: 15  
 
-Goal 5
+---
 
-I continuously enhanced my skills by practically implementing projects on SOAP, gRPC, Cloud Buckets, and other new technologies. Completed relevant Udemy courses to strengthen my technical knowledge. Actively created and reviewed Confluence pages to document project learnings, best practices, and technical findings, contributing to the team's knowledge base. Focused on both learning and applying new skills to real-time projects, ensuring consistent personal and professional growth.
+### Goal 5: Continuous Learning and Development (NBBL, AMPS, and New Technologies)  
+Goal: Continue enhancing skills through practical project implementation, completing relevant courses, and experimenting with new technologies for NBBL and AMPS.  
+Measure:  
+- Completion of Udemy courses related to NBBL and AMPS technologies.  
+- Hands-on practical implementation of advanced topics such as SOAP, gRPC, and Cloud Buckets.  
+- Documentation and review of project learnings in Confluence.  
+Weightage: 15  
 
-Goal 6
-I consistently maintained clear and streamlined communication with teammates, ensuring smooth coordination in daily tasks, sprint planning, and issue resolutions. Actively collaborated with stakeholders across the bank, gathering inputs and aligning technical solutions with business objectives. Fostered a positive, transparent work culture by managing JIRA tasks efficiently and ensuring timely updates and feedback within the team.
+---
 
+### Goal 6: Team Communication and Collaboration (NBBL, AMPS, and Cross-Functional Teams)  
+Goal: Improve communication and collaboration across NBBL, AMPS, and cross-functional teams (such as QA, stakeholders, and external vendors) to drive project success.  
+Measure:  
+- Streamlined communication and feedback loops between internal teams and external stakeholders (such as AMPS clients).  
+- Effective collaboration with QA teams, ensuring timely issue resolution and minimal bugs in the projects.  
+- Regular review and updates of JIRA tasks to keep teams aligned.  
+Weightage: 10  
+
+---
+
+### Key Highlights for 2025 & 2026:
+
+1. NBBL will remain a critical focus as it continues to roll out live, with special attention on database optimization, cloud deployment, and streamlined processes.  
+2. AMPS will be a major new initiative for 2025, with an emphasis on technological implementation, team collaboration, and project delivery.  
+3. Potential work with Issuer Switch will be based on the needs of the projects, ensuring smooth coordination and database management across systems.
+
+---
+
+These goals align with your ongoing efforts and address the high-priority projects coming up for the next couple of years. If you feel there’s any more specificity you’d like to add or adjust, feel free to let me know, Master!
