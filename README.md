@@ -1,5 +1,53 @@
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME}
 
-Service Name	Secret Manager	Config Map	Database Scripts	Code Sync Status	Checkmarx	Testing	Performance Benchmarks	Remarks
-pf-engg-amps-issuer-service	Updated	Synced	Pending	Pending	Completed	-	Pending	-
-pf-engg-amps-epi-backend-service	Updated	Synced	Pending	Pending	Pending	-	Pending	-
-pf-engg-amps-sdkbackend-service	Updated	Synced	Pending	Pending	Pending	-	Pending	-
+server:
+  port: ${SERVER_PORT}
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH}
+    
+baseURl: ${BASE_URL}
+
+amps:
+  issuer:
+    service:
+      exchangeKeysUrl: ${AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL}
+      exchangeKeysUrlPlain: ${AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL_PLAIN}
+      reqFetchUrlPlain: ${AMPS_ISSUER_SERVICE_REQ_FETCH_URL_PLAIN}
+      reqFetchUrl: ${AMPS_ISSUER_SERVICE_REQ_FETCH_URL}
+      generateOtpUrlPlain: ${AMPS_ISSUER_SERVICE_GENERATE_OTP_URL_PLAIN}
+      generateOtpUrl: ${AMPS_ISSUER_SERVICE_GENERATE_OTP_URL}
+      resendOtpUrlPlain: ${AMPS_ISSUER_SERVICE_RESEND_OTP_URL_PLAIN}
+      resendOtpUrl: ${AMPS_ISSUER_SERVICE_RESEND_OTP_URL}
+      verifyOtpUrlPlain: ${AMPS_ISSUER_SERVICE_VERIFY_OTP_URL_PLAIN}
+      verifyOtpUrl: ${AMPS_ISSUER_SERVICE_VERIFY_OTP_URL}
+      paymentUrlPlain: ${AMPS_ISSUER_SERVICE_PAYMENT_URL_PLAIN}
+      paymentUrl: ${AMPS_ISSUER_SERVICE_PAYMENT_URL}
+
+
+
+
+====
+
+CONFIG_MAP:
+  SPRING_APPLICATION_NAME: "AMPS-SDK-BACKEND"
+
+  SERVER_PORT: "8093"
+  SERVER_SERVLET_CONTEXT_PATH: "/AMPS-ISSUER-SDK-BACKEND"
+    
+  BASE_URL: "http://pf-engg-amps-issuer-service.payment-factory-uat.svc.cluster.local/issuer-service"
+
+  AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL: "/exchange-keys"
+  AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL_PLAIN: "/exchange-keys"
+  AMPS_ISSUER_SERVICE_REQ_FETCH_URL_PLAIN: "/1.0/reqfetchtxn"
+  AMPS_ISSUER_SERVICE_REQ_FETCH_URL: "/1.1/reqfetchtxn"
+  AMPS_ISSUER_SERVICE_GENERATE_OTP_URL_PLAIN: "/v1/otp/generate"
+  AMPS_ISSUER_SERVICE_GENERATE_OTP_URL: "/v1/otp/1.1/generate"
+  AMPS_ISSUER_SERVICE_RESEND_OTP_URL_PLAIN: "/v1/otp/resend"
+  AMPS_ISSUER_SERVICE_RESEND_OTP_URL: "/v1/otp/1.1/resend"
+  AMPS_ISSUER_SERVICE_VERIFY_OTP_URL_PLAIN: "/v1/otp/verify"
+  AMPS_ISSUER_SERVICE_VERIFY_OTP_URL: "/v1/otp/1.1/verify"
+  AMPS_ISSUER_SERVICE_PAYMENT_URL_PLAIN: "/1.0/payment"
+  AMPS_ISSUER_SERVICE_PAYMENT_URL: "/1.1/payment"
+
