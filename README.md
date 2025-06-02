@@ -1,53 +1,79 @@
 spring:
   application:
     name: ${SPRING_APPLICATION_NAME}
+  yugabyte:
+    url: ${YUGABYTE_URL}
+    username: ${YUGABYTE_USERNAME}
+    password: ${YUGABYTE_PASSWORD}
+    driver-class-name: ${YUGABYTE_DRIVER_CLASS_NAME}
+  jpa:
+    show-sql: ${JPA_SHOW_SQL}
 
 server:
   port: ${SERVER_PORT}
   servlet:
     context-path: ${SERVER_SERVLET_CONTEXT_PATH}
-    
-baseURl: ${BASE_URL}
 
-amps:
-  issuer:
-    service:
-      exchangeKeysUrl: ${AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL}
-      exchangeKeysUrlPlain: ${AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL_PLAIN}
-      reqFetchUrlPlain: ${AMPS_ISSUER_SERVICE_REQ_FETCH_URL_PLAIN}
-      reqFetchUrl: ${AMPS_ISSUER_SERVICE_REQ_FETCH_URL}
-      generateOtpUrlPlain: ${AMPS_ISSUER_SERVICE_GENERATE_OTP_URL_PLAIN}
-      generateOtpUrl: ${AMPS_ISSUER_SERVICE_GENERATE_OTP_URL}
-      resendOtpUrlPlain: ${AMPS_ISSUER_SERVICE_RESEND_OTP_URL_PLAIN}
-      resendOtpUrl: ${AMPS_ISSUER_SERVICE_RESEND_OTP_URL}
-      verifyOtpUrlPlain: ${AMPS_ISSUER_SERVICE_VERIFY_OTP_URL_PLAIN}
-      verifyOtpUrl: ${AMPS_ISSUER_SERVICE_VERIFY_OTP_URL}
-      paymentUrlPlain: ${AMPS_ISSUER_SERVICE_PAYMENT_URL_PLAIN}
-      paymentUrl: ${AMPS_ISSUER_SERVICE_PAYMENT_URL}
+app:
+  nbbl:
+    enc:
+      seckey: ${APP_NBBL_ENC_SECKEY}
+    pin:
+      seckey: ${APP_NBBL_PIN_SECKEY}
 
+aerospike:
+  host: ${AEROSPIKE_HOST}
+  username: ${AEROSPIKE_USERNAME}
+  paswd: ${AEROSPIKE_PASWD}
+  namespacevalue: ${AEROSPIKE_NAMESPACEVALUE}
+  ttl: ${AEROSPIKE_TTL}
+
+user:
+  session:
+    audit:
+      enabled: ${USER_SESSION_AUDIT_ENABLED}
+      
+obp:
+  validate-pin-url: ${OBP_VALIDATE_PIN_URL}
 
 
 
 ====
 
-CONFIG_MAP:
-  SPRING_APPLICATION_NAME: "AMPS-SDK-BACKEND"
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+  yugabyte:
+    url: ${YUGABYTE_URL}
+    username: ${YUGABYTE_USERNAME}
+    password: ${YUGABYTE_PASSWORD}
+    driver-class-name: ${YUGABYTE_DRIVER_CLASS_NAME}
+  jpa:
+    show-sql: ${JPA_SHOW_SQL}
 
-  SERVER_PORT: "8093"
-  SERVER_SERVLET_CONTEXT_PATH: "/AMPS-ISSUER-SDK-BACKEND"
-    
-  BASE_URL: "http://pf-engg-amps-issuer-service.payment-factory-uat.svc.cluster.local/issuer-service"
+server:
+  port: ${SERVER_PORT}
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH}
 
-  AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL: "/exchange-keys"
-  AMPS_ISSUER_SERVICE_EXCHANGE_KEYS_URL_PLAIN: "/exchange-keys"
-  AMPS_ISSUER_SERVICE_REQ_FETCH_URL_PLAIN: "/1.0/reqfetchtxn"
-  AMPS_ISSUER_SERVICE_REQ_FETCH_URL: "/1.1/reqfetchtxn"
-  AMPS_ISSUER_SERVICE_GENERATE_OTP_URL_PLAIN: "/v1/otp/generate"
-  AMPS_ISSUER_SERVICE_GENERATE_OTP_URL: "/v1/otp/1.1/generate"
-  AMPS_ISSUER_SERVICE_RESEND_OTP_URL_PLAIN: "/v1/otp/resend"
-  AMPS_ISSUER_SERVICE_RESEND_OTP_URL: "/v1/otp/1.1/resend"
-  AMPS_ISSUER_SERVICE_VERIFY_OTP_URL_PLAIN: "/v1/otp/verify"
-  AMPS_ISSUER_SERVICE_VERIFY_OTP_URL: "/v1/otp/1.1/verify"
-  AMPS_ISSUER_SERVICE_PAYMENT_URL_PLAIN: "/1.0/payment"
-  AMPS_ISSUER_SERVICE_PAYMENT_URL: "/1.1/payment"
+app:
+  nbbl:
+    enc:
+      seckey: ${APP_NBBL_ENC_SECKEY}
+    pin:
+      seckey: ${APP_NBBL_PIN_SECKEY}
 
+aerospike:
+  host: ${AEROSPIKE_HOST}
+  username: ${AEROSPIKE_USERNAME}
+  paswd: ${AEROSPIKE_PASWD}
+  namespacevalue: ${AEROSPIKE_NAMESPACEVALUE}
+  ttl: ${AEROSPIKE_TTL}
+
+user:
+  session:
+    audit:
+      enabled: ${USER_SESSION_AUDIT_ENABLED}
+      
+obp:
+  validate-pin-url: ${OBP_VALIDATE_PIN_URL}
