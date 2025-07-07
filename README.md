@@ -1,30 +1,21 @@
-SECRETS:
-  YUGABYTE_USERNAME: "yugabyte"
-  YUGABYTE_PASSWORD: "yugabyte"
-
-  AEROSPIKE_USERNAME: "dbuser_rw"
-  AEROSPIKE_PASSWORD: "}=qET3J!LEWP{ph"
-
-  APP_NBBL_ENC_SECKEY: "UkxFIUBBTVBTJEBBdXRoZW4wOTg3NiEjdXVRV08zJjE="
-  APP_NBBL_PIN_SECKEY: "w3EW+0wNlCtQW9LCUcs89VM6pydUqhFaVhl7jFeI5b8="
 
 
-===
-CONFIG_MAP:
-  SPRING_APPLICATION_NAME: "EPI_SERVICE"
-
-  YUGABYTE_URL: "jdbc:yugabytedb://10.216.33.7:5433/dev4_issuer"
-  YUGABYTE_DRIVER_CLASS_NAME: "com.yugabyte.Driver"
-
-  JPA_SHOW_SQL: "true"
-
-  SERVER_PORT: "8080"
-  SERVER_SERVLET_CONTEXT_PATH: "/EPI_SERVICE"
-
-  AEROSPIKE_HOST: "10.216.34.143:3000"
-  AEROSPIKE_NAMESPACEVALUE: "aero-dev"
-  AEROSPIKE_TTL: "70"
-
-  USER_SESSION_AUDIT_ENABLED: "true"
-
-  OBP_VALIDATE_PIN_URL: "https://10.226.163.7:9444/com.ofss.fc.cz.hdfc.obp.snorkelauth.webservice/ValidatePIN"
+| 🔢 Step | Operation                                                                 | Type           | Notes                                      |
+|--------|---------------------------------------------------------------------------|----------------|--------------------------------------------|
+| 1️⃣     | `customerDetailsRepository.existsByCustId(custId)`                       | DB call        | Check 1                                    |
+| 2️⃣     | `obpDownstreamCaller.callUserStatusService(requestDTO)`                  | CS call        | 3rd-party service                          |
+| 3️⃣     | `customerDetailsRepository.existsByCustId(custId)`                       | DB call        | Duplicate check                             |
+| 4️⃣     | `requestFetchTransactionDAO.checkRefIdExist(request.getReferenceId())`   | DB call        | Ref ID check                               |
+| 5️⃣     | `rateLimitDAO.cacheRateLimitDetails(hashCustId)`                         | Cache call     | Rate limit cache                           |
+| 6️⃣     | `requestFetchTransactionDAO.insertNbblDataIssuerTable()`                 | DB call        | IssuerFetchRequestTable insert             |
+| 7️⃣     | `nbblDownstreamCaller.callNBBLReqFetchTxnDetailsV1()`                    | NBBL call      | External API                               |
+| 8️⃣     | `obpDownstreamCaller.callLimitService()`                                 | CS call        | Limit inquiry                              |
+| 9️⃣     | `getAccountDetails(req)`                                                 | OBP call       | OBP integration                            |
+| 🔟     | `accountDetailsResponsesRepository.save(entity)`                         | DB call        | Save account response                      |
+| 1️⃣1️⃣    | `requestFetchTransactionDAO.insertNbblResponseDataIssuerTable()`         | DB call        | Save ACK response                          |
+| 1️⃣2️⃣    | `solace conuser` + polling                                              | Infra wait     | Solace listener + DB poll loop             |
+| 1️⃣3️⃣    | `issuerFetchResponseTableRepository.findByReferenceId(refId)`           | DB call        | Can be skipped (redundant)                |
+| 1️⃣4️⃣    | `performTptAndTransactionLimitCheckL1()`                                 | DB call        | Save TPT data                              |
+| 1️⃣5️⃣    | `cipherAccountDetails()`                                                | CPU intensive  | Slow—large account list                    |
+| 1️⃣6️⃣    | `cacheAccountDetails(...)`                                              | Cache call     | Push to Redis                              |
+| 1️⃣7️⃣    | `paymentTransactionMasterDao.savePaymentMasterTable(...)`              | DB call        | Final txn save                             |
