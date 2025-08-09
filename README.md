@@ -1,38 +1,25 @@
-public interface XeleratorMonthlyFileRepository extends JpaRepository<XeleratorMonthlyFile, Long> {
+String.format(
+            "A GST Xelerator Monthly File already exists for %d-%02d. " +
+            "Only one file per calendar month is allowed for settlement.",
+            year, month
+        )
 
-    @Query(value = """
-        SELECT COUNT(*) > 0
-        FROM xelerator_monthly_file
-        WHERE EXTRACT(YEAR FROM settlement_date) = :year
-          AND EXTRACT(MONTH FROM settlement_date) = :month
-        """, nativeQuery = true)
-    boolean existsByYearAndMonth(@Param("year") int year, @Param("month") int month);
-}
+        ALTER TABLE xelerator_monthly_file
+ADD COLUMN year_month TEXT GENERATED ALWAYS AS (
+    TO_CHAR(settlement_date, 'YYYY-MM')
+) STORED;
 
-@Service
-public class XeleratorMonthlyFileService {
+@Column(name = "year_month", insertable = false, updatable = false)
+private String yearMonth;
 
-    @Autowired
-    private XeleratorMonthlyFileRepository repository;
-
-    public void saveFile(XeleratorMonthlyFile file) {
-        OffsetDateTime settlementDate = file.getSettlementDate();
-        int year = settlementDate.getYear();
-        int month = settlementDate.getMonthValue();
-
-        boolean exists = repository.existsByYearAndMonth(year, month);
-        if (exists) {
-            throw new IllegalArgumentException(
-                String.format("A file already exists for %d-%02d", year, month)
-            );
-        }
-
-        repository.save(file);
+public void validateMonthlyFileDoesNotExist(int year, int month) {
+    String yearMonth = String.format("%d-%02d", year, month);
+    boolean exists = repository.existsByYearMonth(yearMonth);
+    if (exists) {
+        throw new MonthlyFileAlreadyExistsException(year, month);
     }
 }
 
-CREATE UNIQUE INDEX ux_monthly_file_year_month
-ON xelerator_monthly_file (
-    EXTRACT(YEAR FROM settlement_date),
-    EXTRACT(MONTH FROM settlement_date)
-);
+
+@Query("SELECT COUNT(f) > 0 FROM XeleratorMonthlyFile f WHERE f.yearMonth = :yearMonth")
+boolean existsByYearMonth(@Param("yearMonth") String yearMonth);
