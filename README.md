@@ -1,2 +1,84 @@
-Hi, Master. Good morning. In my project I got a new requirement. Actually my project is a payment transfer project. OK so. So my project name is IBMB OK and from my project I need to call a third party service(Common Service). Which is my internal service. Which will be handling the. Third party transfer limits. Those are called TPT limits. OK, so basically. I am having four API's OK one API is to get the user status API like when the user is TPT activated OK because. There is a rule called 24, 48 hours rule. If customer TPT registration activation time is less than 24 hours, user is not eligible to do any fund transfer. Next rule is 24 to 48 hours in this? Time the user can spend only maximum of ₹50,000. Transaction OK. for this one and remaining 3 APIs are. After I'm validating OK the customer has valid amount to transfer then I will lock that amount,  We need to lock that amount right? So that is called hold TPT limit API OK and once. I holded that amount, then I will do the actual amount transfer by calling FC API. Then based on the status of this API I will be. Weather Releasing. The holded amount on failure of that transaction(FC Call). Else confirming. That amount has been consumed on a success of the. Transaction. OK so for this like I already have everything like webclientutils, URLs, everything. Now I need to design the database structure the API call. Flow chart. And then I will start the complete implementation, okay. Can you please help me with the DB design and Architecture for this flow 
+## 1. Transaction Hold Table
 
+```sql
+CREATE TABLE tpt_transaction_hold (
+    id bigserial not null primary key,
+    request_id           VARCHAR(64)  NOT NULL,
+    channel_id           VARCHAR(16)  NOT NULL,
+    transaction_id       VARCHAR(64)  NOT NULL,
+    customer_id          VARCHAR(16)  NOT NULL,
+    from_account         VARCHAR(32)  NOT NULL,
+    channel              VARCHAR(8)   NOT NULL,
+    mode                 VARCHAR(8)   NOT NULL,
+    amount               DECIMAL(16,2) NOT NULL,
+    request_payload      TEXT         NOT NULL,
+    response_data        TEXT         NOT NULL,
+    status               VARCHAR(8)   NOT NULL,    -- 'SUCCESS' or 'FAILED'
+    errorcode            VARCHAR(16),
+    errormessage         VARCHAR(1000),
+);
+```
+
+---
+
+## 2. Transaction Confirm Table
+
+```sql
+CREATE TABLE tpt_transaction_confirm (
+    id bigserial not null primary key,
+    request_id           VARCHAR(64)  NOT NULL,
+    channel_id           VARCHAR(16)  NOT NULL,
+    transaction_id       VARCHAR(64)  NOT NULL,
+    customer_id          VARCHAR(64)  NOT NULL,
+    id_txn               VARCHAR(64),
+    ref_no               VARCHAR(32),
+    request_payload      TEXT         NOT NULL,
+    response_data        TEXT         NOT NULL,
+    status               VARCHAR(8)   NOT NULL,
+    errorcode            VARCHAR(16),
+    errormessage         VARCHAR(1000),
+);
+```
+
+---
+
+## 3. Transaction Release Table
+
+```sql
+CREATE TABLE tpt_transaction_release (
+    id bigserial not null primary key,
+    request_id           VARCHAR(64)  NOT NULL,
+    channel_id           VARCHAR(16)  NOT NULL,
+    token                VARCHAR(64)  NOT NULL,
+    transaction_id       VARCHAR(64)  NOT NULL,
+    customer_id          VARCHAR(64)  NOT NULL,
+    request_payload      TEXT         NOT NULL,
+    response_data        TEXT         NOT NULL,
+    status               VARCHAR(8)   NOT NULL,
+    errorcode            VARCHAR(16),
+    errormessage         VARCHAR(1000),
+);
+```
+
+---
+
+## 4. Get User Status Table
+
+```sql
+CREATE TABLE tpt_user_status (
+    id bigserial not null primary key,
+    request_id               VARCHAR(64)  NOT NULL,
+    channel_id               VARCHAR(16)  NOT NULL,
+    platform                 VARCHAR(16)  NOT NULL,
+    channel                  VARCHAR(8)   NOT NULL,
+    login_id                 VARCHAR(16)  NOT NULL,
+    identifiers              VARCHAR(64)  NOT NULL, -- Comma separated if multiple
+    request_payload          TEXT         NOT NULL,
+    response_data            TEXT         NOT NULL,
+    status                   VARCHAR(8)   NOT NULL,
+    errorcode                VARCHAR(16),
+    errormessage             VARCHAR(1000),
+    tpt_registration_status  VARCHAR(16),
+    tpt_activation_time      BIGINT,
+);
+```
