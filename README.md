@@ -16,6 +16,7 @@ CREATE TABLE tpt_transaction_hold (
     status               VARCHAR(8)   NOT NULL,    -- 'SUCCESS' or 'FAILED'
     errorcode            VARCHAR(16),
     errormessage         VARCHAR(1000),
+    created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -37,6 +38,7 @@ CREATE TABLE tpt_transaction_confirm (
     status               VARCHAR(8)   NOT NULL,
     errorcode            VARCHAR(16),
     errormessage         VARCHAR(1000),
+    created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -57,6 +59,7 @@ CREATE TABLE tpt_transaction_release (
     status               VARCHAR(8)   NOT NULL,
     errorcode            VARCHAR(16),
     errormessage         VARCHAR(1000),
+    created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -80,5 +83,6 @@ CREATE TABLE tpt_user_status (
     errormessage             VARCHAR(1000),
     tpt_registration_status  VARCHAR(16),
     tpt_activation_time      BIGINT,
+    created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 ```
