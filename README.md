@@ -6,7 +6,7 @@ flowchart TD
     E -- Yes --> F{Is transaction amount <= 50,000?}
     F -- No --> G[Return Error to client: Max 50k transfer in first 48 hrs exceeded]
     F -- Yes --> H[IBMB calls Available Limit API to CS]
-    E -- No --> H[IBMB calls Available Limit API to CS]
+    E -- No --> H
     H --> I{Is limit available?}
     I -- No --> J[Return Limit Breach Error to client]
     I -- Yes --> K[IBMB calls Hold API to CS to reserve amount]
@@ -14,7 +14,15 @@ flowchart TD
     L -- No --> M[Return Hold Failure Error to client]
     L -- Yes --> N[IBMB calls Actual Debit API to Flexcube]
     N --> O{Debit Successful?}
-    O -- Yes --> P[IBMB calls Confirm API to CS]
-    P --> Q[Return Success to client]
-    O -- No --> R[IBMB calls Release API to CS]
-    R --> S[Return Debit Failure to client]
+    O -- No --> Z1[IBMB calls Release API to CS]
+    Z1 --> Z2[Return Debit Failure to client]
+    O -- Yes --> P[IBMB calls NBBL third party for ACK]
+    P --> Q{NBBL ACK Successful?}
+    Q -- No --> Z3[IBMB calls Release API to CS]
+    Z3 --> Z4[Return NBBL Failure to client]
+    Q -- Yes --> R[Poll for Asynchronous Response from NBBL]
+    R --> S{Is Async Response Success?}
+    S -- No --> Z5[IBMB calls Release API to CS]
+    Z5 --> Z6[Return Txn Failure to client]
+    S -- Yes --> T[IBMB calls Confirm API to CS]
+    T --> U[Return Success to client]
