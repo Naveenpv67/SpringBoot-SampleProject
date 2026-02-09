@@ -1,4 +1,6 @@
-In this method, I want to get the file name in the below-mentioned format, but I don't know how to smartly handle that folder name creation. It depends on the invoices. How to define invoices previously? Anyway, invoices are generated at run-time only. Like, I am only generating, but how to generate all at once? There are two approaches:
-Pre-assumption - Suppose if I get any three numbers of transactions, I will generate three inverse numbers, and the folder name I will create from basis of that three invoices, comma-separated file name.zip, or something like that. This is one up, this is approach one, and setting the same inverse number to the respective DTO request DTO. This is one.
-Another approach is like creating one list of strings and trying to store all the generated invoices in that list. Once all the invoices are generated, if I reach that last file, then you send batch folder name to one batch folder name as for only at that last. Then, finally after zipping, you make that you rename the folder name from a temporary folder name to the actual zip file name.
-These are the two approaches. If you have any other approach, please feel free to suggest how to go to this very smartly.
+Wow, this method now looks very great. But I will make there are few observations:
+Without any method signature updation for the call GST, so client we can achieve this. I think okay, so we'll not use two different batch folder name.
+We will create the list of invoice numbers. Not in that main loop, we will create another. We will create one list, and in that list, we will create the number for how many number of transactions out there that many investors we will generate. We will keep it in one list.
+Later, we can pass that list of invoice number individually with respect to value of the index of the existing for loop that index I okay, I think we can use that one.
+We will not create final folder zip folder name and a temporary folder name. We will first assume this will be the final folder, and we will pass only the folder name to the existing variable and that is a batch folder name.
+So I think then we can minimize more changes.
