@@ -1,8 +1,4 @@
-
-Hi,
-
-I am a software engineer. I am implementing robust exception handling. I have two services:
-SDK backend service
-Issuer service
-
-Here, the issuer service is the main core service, and the SDK backend service is the simple service which will only act as an API gateway. That is, I have a web client call in the SDK service which will simply redirect all the calls to the issuer service and collect the response. Not collect, like send back the same response. Here, I have handled exceptions in the issuer service very robustly and efficiently, but in the SDK backend service, in the exception handling, like in the web client call on error, I want to handle it more efficiently. If it is a type of custom exception, then don't do anything, don't alter any other message. So as it is, that is what I want to change. Would you please help me on this? 
+In this method, I want to get the file name in the below-mentioned format, but I don't know how to smartly handle that folder name creation. It depends on the invoices. How to define invoices previously? Anyway, invoices are generated at run-time only. Like, I am only generating, but how to generate all at once? There are two approaches:
+Pre-assumption - Suppose if I get any three numbers of transactions, I will generate three inverse numbers, and the folder name I will create from basis of that three invoices, comma-separated file name.zip, or something like that. This is one up, this is approach one, and setting the same inverse number to the respective DTO request DTO. This is one.
+Another approach is like creating one list of strings and trying to store all the generated invoices in that list. Once all the invoices are generated, if I reach that last file, then you send batch folder name to one batch folder name as for only at that last. Then, finally after zipping, you make that you rename the folder name from a temporary folder name to the actual zip file name.
+These are the two approaches. If you have any other approach, please feel free to suggest how to go to this very smartly.
