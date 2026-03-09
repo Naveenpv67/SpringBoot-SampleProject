@@ -1,7 +1,4 @@
-Hi Master,
-
-This Flow is very awesome, but only one thing is this custom exception. I am using it all over my complete project, so I don't want to catch that custom exception for PRM check case and re-throw the exception.
-
-So, I am thinking this custom exception is a generic exception in my project, so I will try to extend that custom exception and prepare something called PRM denied or PRM check exception like this. I will catch that, and if it is only a PRM exception, then I will throw it.
-
-Please validate this code and help me. 
+Hi master, I have this custom exception class. In my entire project scope, if I want to get the error message, I want to get the error code. I'm always getting confused because I have two kinds of error codes:
+One code is of integer
+Another code is of string
+In all places, I need to do null checks between each two things. This code is getting duplicated. I am thinking in this exception class if I will do one get code message, get error code method. In that method, only I will try to add that logic so that I can reuse the same code in all of those places instead of always doing the rechecking. Correct? But one catch point is the return type will be changing. It can be either string or even int. So, how to handle this? 
