@@ -1,4 +1,7 @@
-Hi master, I have this custom exception class. In my entire project scope, if I want to get the error message, I want to get the error code. I'm always getting confused because I have two kinds of error codes:
-One code is of integer
-Another code is of string
-In all places, I need to do null checks between each two things. This code is getting duplicated. I am thinking in this exception class if I will do one get code message, get error code method. In that method, only I will try to add that logic so that I can reuse the same code in all of those places instead of always doing the rechecking. Correct? But one catch point is the return type will be changing. It can be either string or even int. So, how to handle this? 
+Hi Master,
+
+I have created a lot of release notes, but actually, I have failed in the UIT deployment because it is like multiple functionalities have been delivered and developed by multiple developers and multiple services have been involved.
+
+Like multiple functionalities have been developed by multiple developers in multiple microservices for the same functionality, so this caused a huge problem while deploying to UIT.
+
+Now I want to mention a final release note where all the things are mentioned without missing. I want to get a conference page that is very neat, formatted, and structured without missing all these mistakes. I have to note in the conference page. 
