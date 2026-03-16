@@ -1,7 +1,7 @@
-Hi Master,
-
-I have created a lot of release notes, but actually, I have failed in the UIT deployment because it is like multiple functionalities have been delivered and developed by multiple developers and multiple services have been involved.
-
-Like multiple functionalities have been developed by multiple developers in multiple microservices for the same functionality, so this caused a huge problem while deploying to UIT.
-
-Now I want to mention a final release note where all the things are mentioned without missing. I want to get a conference page that is very neat, formatted, and structured without missing all these mistakes. I have to note in the conference page. 
+Hi master, this is my complete payment flow method. Here, there are a lot of flags like this shouldreverse, overallresult, and now I want to introduce one more step that i mean, I already have introduced a new step that is calling PRMNRT call status only if overall status is success. 
+But now I need to call the PRM NRT call means invoke PRM nrt method irrespective of the status that is result is success or failure. I only need to call this method if I have all the PRM analysis request DTO isnotnull. That is supposed to be checked in this method and also I will use a boolean flag. After calling 
+that method i will  update the flag to true, so that I can utilize that in all the catch blocks. Another thing is I want to call PRM NRT only after considering the steps from payment 7th step that is perform a TPT and transaction limit check. From there, if any flow is broke, I need to inform PRM NRT call.  
+the 1st condition to call is 
+PRM analysis request details should not be null. The second condition is, if any of the steps fail (i.e., not with after the step 7 including step 7), then I will call this method. Also, I am planning to split this perform risk check method into two parts:
+Building the PRM Analysis Request DTO before the step number 7 so that it will be helpful for me to call the PRM NRT call even though step number 7 is failed.
+I will pass the PRM Risk Check Method or this built PRM Analysis Request DTO so that it will be very helpful for me.
