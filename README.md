@@ -263,3 +263,6 @@ By providing the terminate(IssuerResponseEnum, String) overload, we skip the Str
   "devError": "Trace ID: 550e8400-e29b-41d4-a716-446655440000",
   "errorKind": "ERR_KIND_DATABASE"
 }
+
+
+Implement a centralized, high-resilience Payment Exception Framework with standardized ERR_ISS taxonomy, secure error sanitization, and Trace-ID based observability.
