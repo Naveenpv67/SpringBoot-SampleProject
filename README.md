@@ -174,88 +174,84 @@ public class CustomException extends RuntimeException {
 }
 
 import java.util.Map;
-import java.util.HashMap;
+import java.util.Optional;
 
 /**
- * ExceptionHelper: The centralized "Utensil" for the Payment System.
- * Designed to make throwing robust, categorized exceptions effortless.
+ * ExceptionHelper: The Ultimate Generic Utensil.
+ * Optimized to prevent NullPointerExceptions and minimize boilerplate.
  */
 public class ExceptionHelper {
 
     /**
-     * The Standard "Prepare and Throw"
-     * Use this for basic technical or business failures.
+     * LEVEL 1: The "Minimalist"
+     * Use when the Enum itself is enough detail.
+     * Prevents null checks by defaulting the tech detail to the Enum name.
+     */
+    public static CustomException terminate(IssuerResponseEnum response) {
+        return new CustomException(response, "Technical reason not specified: " + response.name());
+    }
+
+    /**
+     * LEVEL 2: The "Simple String" (The Dominant Method)
+     * Use for direct technical messages WITHOUT formatting.
+     * Handles null strings safely.
      */
     public static CustomException terminate(IssuerResponseEnum response, String technicalDetail) {
-        return new CustomException(response, technicalDetail);
+        String safeDetail = Optional.ofNullable(technicalDetail)
+                .orElse("No technical detail provided for: " + response.getErrorCode());
+        return new CustomException(response, safeDetail);
     }
 
     /**
-     * The "Context-Rich" Throw
-     * Use this when you have metadata (like referenceId, userId) to attach.
+     * LEVEL 3: The "Formatted Infinite"
+     * Use when you need to inject variables into the log message.
      */
-    public static CustomException terminate(IssuerResponseEnum response, String technicalDetail, Map<String, Object> metadata) {
-        return new CustomException(response, technicalDetail, metadata);
-    }
-
-    /**
-     * The "Dynamic Technical Message" Throw
-     * Allows developers to use String formatting (e.g., "User %s failed")
-     */
-    public static CustomException terminate(IssuerResponseEnum response, String techDetailFormat, Object... args) {
-        String formattedDetail = String.format(techDetailFormat, args);
-        return new CustomException(response, formattedDetail);
-    }
-
-    /**
-     * Specialized: Database Record Not Found
-     * Automatically maps to DB_RECORD_NOT_FOUND and creates a clear tech log.
-     */
-    public static CustomException terminateNotFound(String entityName, String id) {
-        String techDetail = String.format("%s not found with ID: %s in the database.", entityName, id);
-        return new CustomException(IssuerResponseEnum.DB_RECORD_NOT_FOUND, techDetail);
-    }
-
-    /**
-     * Specialized: TPT Limit Violation
-     * Automatically attaches the attempt and limit to metadata for auditing.
-     */
-    public static CustomException terminateLimitExceeded(double attempted, double limit, String userId) {
-        Map<String, Object> context = new HashMap<>();
-        context.put("attemptedAmount", attempted);
-        context.put("limitValue", limit);
-        context.put("userId", userId);
+    public static CustomException terminate(IssuerResponseEnum response, String techMessage, Object... args) {
+        // If args are null or empty, fall back to the Simple String method
+        if (args == null || args.length == 0) {
+            return terminate(response, techMessage);
+        }
         
-        return new CustomException(
-            IssuerResponseEnum.TPT_LIMIT_EXCEEDED, 
-            String.format("User %s hit TPT limit. Attempted: %f, Limit: %f", userId, attempted, limit),
-            context
-        );
+        try {
+            String formattedDetail = String.format(techMessage, args);
+            return new CustomException(response, formattedDetail);
+        } catch (Exception e) {
+            // If formatting fails (e.g. mismatch placeholders), don't crash. Log everything.
+            return new CustomException(response, techMessage + " | Raw Args: " + java.util.Arrays.toString(args));
+        }
+    }
+
+    /**
+     * LEVEL 4: The "Context-Rich" (Metadata)
+     * For when you need a Map for auditing/PII masking.
+     */
+    public static CustomException terminateWithContext(IssuerResponseEnum response, Map<String, Object> context, String techMessage, Object... args) {
+        CustomException ex = terminate(response, techMessage, args);
+        if (context != null) {
+            ex.getMetadata().putAll(context);
+        }
+        return ex;
     }
 }
 
-// usage
-public Transaction fetchTransaction(String refId) {
-    return repository.findByRefId(refId)
-        .orElseThrow(() -> ExceptionHelper.terminateNotFound("Transaction", refId));
-}
-
-try {
-    bankGateway.call(request);
-} catch (TimeoutException e) {
-    // Uses the Dynamic String formatting helper
-    throw ExceptionHelper.terminate(
-        IssuerResponseEnum.WCL_TIMEOUT, 
-        "Bank API timed out after %d ms for Ref: %s", timeoutValue, refId
-    );
-}
-
-if (isDuplicate(txRequest)) {
-    Map<String, Object> meta = Map.of("originalTxId", existingId, "timestamp", System.currentTimeMillis());
-    
-    throw ExceptionHelper.terminate(
-        IssuerResponseEnum.DUPLICATE_TRANSACTION, 
-        "Duplicate detected for Ref: " + txRequest.getRefId(), 
-        meta
-    );
-}
+1. Zero Null Risks
+If a developer accidentally does this:
+throw ExceptionHelper.terminate(IssuerResponseEnum.DB_CONNECTION_ERROR, null);
+The system will not crash. The Optional.ofNullable inside the helper will catch it and log: "No technical detail provided for: ERR_ISS_DB_001".
+2. Cleanest "Service Layer" Flow
+You can now choose the shortest path based on the situation:
+Case A: Just the error (No extra info needed)
+code
+Java
+throw ExceptionHelper.terminate(IssuerResponseEnum.UNAUTHORIZED_ACCESS);
+Case B: A simple message (No formatting overhead)
+code
+Java
+throw ExceptionHelper.terminate(IssuerResponseEnum.DB_CONNECTION_ERROR, "Main Database is in Read-Only mode");
+Case C: Full Diagnostic (The Infinite Path)
+code
+Java
+throw ExceptionHelper.terminate(IssuerResponseEnum.TPT_LIMIT_EXCEEDED, 
+    "User %s attempted %f. Limit is %f", userId, amount, limit);
+3. High Performance
+By providing the terminate(IssuerResponseEnum, String) overload, we skip the String.format engine entirely for simple messages. In a system handling 10,000 transactions per second, avoiding regex-based string formatting where it's not needed saves CPU cycles.
