@@ -255,3 +255,11 @@ throw ExceptionHelper.terminate(IssuerResponseEnum.TPT_LIMIT_EXCEEDED,
     "User %s attempted %f. Limit is %f", userId, amount, limit);
 3. High Performance
 By providing the terminate(IssuerResponseEnum, String) overload, we skip the String.format engine entirely for simple messages. In a system handling 10,000 transactions per second, avoiding regex-based string formatting where it's not needed saves CPU cycles.
+
+
+{
+  "code": "ERR_ISS_DB_001",
+  "message": "Unable to process your transaction at this time. Please try again later.",
+  "devError": "Trace ID: 550e8400-e29b-41d4-a716-446655440000",
+  "errorKind": "ERR_KIND_DATABASE"
+}
