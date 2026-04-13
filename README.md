@@ -1,5 +1,4 @@
-
-
-Father's Name: Venkataram Reddy P G
-
-Home Address: No.6, 1st B Main Road, Dattathreya Nagar, Banashankari 3rd Stage, PO: Banashankari III Stage, DIST: Bengaluru, Karnataka - 560085
+curl --request GET \
+  --url 'https://YOUR_DOMAIN.atlassian.net/rest/api/3/issue/YOUR_ISSUE_KEY?fields=description' \
+  --header 'Authorization: Basic YOUR_BASE64_ENCODED_CREDENTIALS' \
+  --header 'Accept: application/json'
