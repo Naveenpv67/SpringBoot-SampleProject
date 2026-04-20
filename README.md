@@ -1,4 +1,1 @@
-// If merchantName is null, this returns "" (Empty String) instead of null
-addField(fieldDtos, PrmRequestField.MSG_SRC, 
-    StringUtils.defaultString(StringUtils.left(prmAnalysisRequestDTO.getMerchantName(), 20))
-);
+Note: The issue is no longer reproducible after the pod restart. Since this is a critical issue, we must try to replicate it by performing load testing or recreating the specific conditions in a test environment.
