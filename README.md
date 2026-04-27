@@ -1,47 +1,46 @@
-/**
-     * Maps Entity to DTO and persists to Aerospike.
-     * Logic: Fail-safe (Catch exception so payment flow continues even if cache fails).
-     */
-    public void cacheEntity(IssuerFetchRequestTable entity) {
-        if (entity == null) return;
-        
-        String pk = entity.getReferenceId();
-        try {
-            log.info("[CACHE-WRITE-START] Writing ReqFetch to Aerospike for RefID: {}", pk);
-            
-            ReqFetchCacheDTO dto = mapper.toCacheDto(entity);
-            int ttl = ttlConfig.getReqFetch();
-            
-            aerospikeUtil.addUpdateCache(SET_NAME, pk, ttl, dto);
-            
-            log.info("[CACHE-WRITE-SUCCESS] ReqFetch persisted for RefID: {} | TTL: {}s", pk, ttl);
-        } catch (Exception e) {
-            log.error("[CACHE-WRITE-FAIL] Failed to write cache for RefID: {}. Error: {}", 
-                      pk, ExceptionUtils.getMessage(e));
-            // We do not throw the exception; payment flow should fall back to DB
-        }
-    }
+@Slf4j
+@Component
+public class IssuerFetchDataProvider {
+
+    @Autowired
+    private ReqFetchCacheDAO cacheDAO; // Aerospike Logic
+
+    @Autowired
+    private IssuerFetchRequestTableRepository repository; // DB Logic
+
+    @Autowired
+    private ReqFetchCacheMapper mapper;
 
     /**
-     * Fetches DTO from Aerospike.
-     * Logic: Logs Hits and Misses for performance monitoring.
+     * Unified method: Cache-first with DB Fallback
      */
-    public ReqFetchCacheDTO getCachedDto(String pk) {
+    public IssuerFetchRequestTable getIssuerFetchRequestTable(String referenceId) {
+        // 1. Attempt Cache Read
         try {
-            log.info("[CACHE-FETCH-START] Looking up ReqFetch in Aerospike for RefID: {}", pk);
-            
-            ReqFetchCacheDTO dto = aerospikeUtil.getRecord(SET_NAME, pk, ReqFetchCacheDTO.class);
-            
-            if (dto != null) {
-                log.info("[CACHE-FETCH-HIT] Data retrieved from Aerospike for RefID: {}", pk);
-            } else {
-                log.info("[CACHE-FETCH-MISS] No cache found for RefID: {}. Falling back to DB.", pk);
+            ReqFetchCacheDTO cachedDto = cacheDAO.getCachedDto(referenceId);
+            if (cachedDto != null) {
+                log.info("[DATA-PROVIDER-HIT] Found in Aerospike for RefID: {}", referenceId);
+                return mapper.toEntity(cachedDto); // Convert back to Entity for existing code compatibility
             }
-            return dto;
-            
         } catch (Exception e) {
-            log.error("[CACHE-FETCH-ERROR] Aerospike lookup failed for RefID: {}. Error: {}", 
-                      pk, ExceptionUtils.getMessage(e));
-            return null; // Return null so service layer initiates DB fallback
+            log.error("[DATA-PROVIDER-CACHE-ERROR] Cache lookup failed, proceeding to DB. RefID: {}", referenceId);
         }
+
+        // 2. Cache Miss or Error: Fallback to DB
+        log.info("[DATA-PROVIDER-MISS] Fetching from DB for RefID: {}", referenceId);
+        try {
+            IssuerFetchRequestTable entity = repository.findByReferenceId(referenceId);
+            
+            if (entity != null) {
+                // 3. Asynchronous or Background Update of Cache (Don't block the main flow)
+                cacheDAO.cacheEntity(entity); 
+                return entity;
+            }
+        } catch (Exception e) {
+            log.error("[DATA-PROVIDER-DB-ERROR] DB lookup failed for RefID: {}. Error: {}", 
+                      referenceId, ExceptionUtils.getMessage(e));
+        }
+
+        return null;
     }
+}
