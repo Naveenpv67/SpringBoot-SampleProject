@@ -1,9 +1,12 @@
-Today’s Tasks:
+Hi Narendra,
 
-Cache-Aside DAO: Fetch from cache, fallback to DB, then update cache.
+**Tasks: 27-04-24**
 
-Abstract Mapper: Build MapStruct abstract class for DTO ↔ Entity.
+**Dillip (RespFetch):**
+*   **Cache-Aside DAO:** Implement cache-fetch, DB-fallback, and cache-update logic.
+*   **Abstract Mapper:** Build MapStruct abstract class for DTO to RespFetch mapping.
+*   **Cache Write:** Integrate write logic into the Issue Response Fetch flow.
+*   **Unified Read:** Refactor `respfetch` table reads to use the Cache-first DAO.
 
-Cache Write: Add write logic in Issue Response Fetch flow.
-
-Unified Cache Read: Refactor respfetch table reads to use cache-first DAO.
+**Naveen (Payment):**
+*   Updating soon...
