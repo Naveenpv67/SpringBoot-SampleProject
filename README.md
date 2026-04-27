@@ -1,43 +1,47 @@
-app:
-  cache:
-    ttls:
-      # Default TTL for any cache not specifically defined (in seconds)
-      default-expiry: 3600
-      # Specific TTLs for different payment flows
-      req-fetch: 900
-      otp-validation: 300
-      payment-status: 600
-      user-profile: 86400
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+/**
+     * Maps Entity to DTO and persists to Aerospike.
+     * Logic: Fail-safe (Catch exception so payment flow continues even if cache fails).
+     */
+    public void cacheEntity(IssuerFetchRequestTable entity) {
+        if (entity == null) return;
+        
+        String pk = entity.getReferenceId();
+        try {
+            log.info("[CACHE-WRITE-START] Writing ReqFetch to Aerospike for RefID: {}", pk);
+            
+            ReqFetchCacheDTO dto = mapper.toCacheDto(entity);
+            int ttl = ttlConfig.getReqFetch();
+            
+            aerospikeUtil.addUpdateCache(SET_NAME, pk, ttl, dto);
+            
+            log.info("[CACHE-WRITE-SUCCESS] ReqFetch persisted for RefID: {} | TTL: {}s", pk, ttl);
+        } catch (Exception e) {
+            log.error("[CACHE-WRITE-FAIL] Failed to write cache for RefID: {}. Error: {}", 
+                      pk, ExceptionUtils.getMessage(e));
+            // We do not throw the exception; payment flow should fall back to DB
+        }
+    }
 
-@Data
-@Configuration
-@ConfigurationProperties(prefix = "app.cache.ttls")
-public class CacheTtlConfig {
-
-    private int defaultExpiry;
-    private int reqFetch;
-    private int otpValidation;
-    private int paymentStatus;
-    private int userProfile;
-}
-
- private CacheTtlConfig ttlConfig;
-
-app:
-  cache:
-    ttls:
-      # Format: ${ENVIRONMENT_VARIABLE_NAME:DEFAULT_VALUE}
-      # All values are in Seconds
-      
-      # Default TTL for any general cache
-      default-expiry: ${CACHE_TTL_DEFAULT:3600}
-      
-      # Specific TTLs for Payment Flow sets
-      req-fetch: ${CACHE_TTL_REQ_FETCH:900}
-      otp-validation: ${CACHE_TTL_OTP_VALIDATION:300}
-      payment-status: ${CACHE_TTL_PAYMENT_STATUS:600}
-      user-profile: ${CACHE_TTL_USER_PROFILE:86400}
-
+    /**
+     * Fetches DTO from Aerospike.
+     * Logic: Logs Hits and Misses for performance monitoring.
+     */
+    public ReqFetchCacheDTO getCachedDto(String pk) {
+        try {
+            log.info("[CACHE-FETCH-START] Looking up ReqFetch in Aerospike for RefID: {}", pk);
+            
+            ReqFetchCacheDTO dto = aerospikeUtil.getRecord(SET_NAME, pk, ReqFetchCacheDTO.class);
+            
+            if (dto != null) {
+                log.info("[CACHE-FETCH-HIT] Data retrieved from Aerospike for RefID: {}", pk);
+            } else {
+                log.info("[CACHE-FETCH-MISS] No cache found for RefID: {}. Falling back to DB.", pk);
+            }
+            return dto;
+            
+        } catch (Exception e) {
+            log.error("[CACHE-FETCH-ERROR] Aerospike lookup failed for RefID: {}. Error: {}", 
+                      pk, ExceptionUtils.getMessage(e));
+            return null; // Return null so service layer initiates DB fallback
+        }
+    }
