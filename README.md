@@ -76,4 +76,35 @@ public class ReqFetchCacheDAO {
     }
 }
 
+@Repository
+public class ReqFetchCacheDAO {
+
+    @Autowired
+    private AerospikeUtil aerospikeUtil;
+
+    @Autowired
+    private ReqFetchCacheMapper mapper; // Mapper is injected here
+
+    private static final String SET_NAME = "req_fetch_cache";
+    private static final int TTL_SECONDS = 900;
+
+    /**
+     * Service calls this with an Entity. DAO handles the conversion and save.
+     */
+    public void cacheEntity(IssuerFetchRequestTable entity) {
+        if (entity != null) {
+            ReqFetchCacheDTO dto = mapper.toCacheDto(entity);
+            aerospikeUtil.addUpdateCache(SET_NAME, dto.getPk(), TTL_SECONDS, dto);
+        }
+    }
+
+    /**
+     * Service calls this and gets a DTO directly.
+     */
+    public ReqFetchCacheDTO getCachedDto(String pk) {
+        return aerospikeUtil.getRecord(SET_NAME, pk, ReqFetchCacheDTO.class);
+    }
+}
+
+   private ReqFetchCacheDAO cacheDAO;
 
