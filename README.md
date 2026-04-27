@@ -1,110 +1,43 @@
+app:
+  cache:
+    ttls:
+      # Default TTL for any cache not specifically defined (in seconds)
+      default-expiry: 3600
+      # Specific TTLs for different payment flows
+      req-fetch: 900
+      otp-validation: 300
+      payment-status: 600
+      user-profile: 86400
 import lombok.Data;
-import java.io.Serializable;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-/**
- * Optimized Cache DTO for Issuer Fetch Request
- */
 @Data
-public class ReqFetchCacheDTO implements Serializable {
-    private static final long serialVersionUID = 1L;
+@Configuration
+@ConfigurationProperties(prefix = "app.cache.ttls")
+public class CacheTtlConfig {
 
-    private String pk; // Mapped from referenceId
-    private String deviceApp;
-    private String deviceBrowser;
-    private String deviceOs;
-    private String deviceId;
-    private String initiationMode;
-    private String mobileNo;
-}
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
-
-@Mapper(componentModel = "spring")
-public interface ReqFetchCacheMapper {
-
-    ReqFetchCacheMapper INSTANCE = Mappers.getMapper(ReqFetchCacheMapper.class);
-
-    @Mapping(source = "referenceId", target = "pk")
-    ReqFetchCacheDTO toCacheDto(IssuerFetchRequestTable entity);
-
-    @Mapping(source = "pk", target = "referenceId")
-    IssuerFetchRequestTable toEntity(ReqFetchCacheDTO dto);
+    private int defaultExpiry;
+    private int reqFetch;
+    private int otpValidation;
+    private int paymentStatus;
+    private int userProfile;
 }
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
+ private CacheTtlConfig ttlConfig;
 
-@Repository
-public class ReqFetchCacheDAO {
-
-    // Aerospike 'Set' name for this specific functional area
-    private static final String SET_NAME = "req_fetch_cache";
-    
-    // TTL in seconds (e.g., 900s = 15 minutes)
-    private static final int TTL_SECONDS = 900; 
-
-    @Autowired
-    private AerospikeUtil aerospikeUtil;
-
-    /**
-     * Write operation: Save DTO to Aerospike
-     */
-    public void save(ReqFetchCacheDTO dto) {
-        if (dto != null && dto.getPk() != null) {
-            aerospikeUtil.addUpdateCache(
-                SET_NAME, 
-                dto.getPk(), 
-                TTL_SECONDS, 
-                dto
-            );
-        }
-    }
-
-    /**
-     * Read operation: Fetch DTO from Aerospike
-     */
-    public ReqFetchCacheDTO findByPk(String pk) {
-        if (pk == null || pk.isEmpty()) {
-            return null;
-        }
-        return aerospikeUtil.getRecord(
-            SET_NAME, 
-            pk, 
-            ReqFetchCacheDTO.class
-        );
-    }
-}
-
-@Repository
-public class ReqFetchCacheDAO {
-
-    @Autowired
-    private AerospikeUtil aerospikeUtil;
-
-    @Autowired
-    private ReqFetchCacheMapper mapper; // Mapper is injected here
-
-    private static final String SET_NAME = "req_fetch_cache";
-    private static final int TTL_SECONDS = 900;
-
-    /**
-     * Service calls this with an Entity. DAO handles the conversion and save.
-     */
-    public void cacheEntity(IssuerFetchRequestTable entity) {
-        if (entity != null) {
-            ReqFetchCacheDTO dto = mapper.toCacheDto(entity);
-            aerospikeUtil.addUpdateCache(SET_NAME, dto.getPk(), TTL_SECONDS, dto);
-        }
-    }
-
-    /**
-     * Service calls this and gets a DTO directly.
-     */
-    public ReqFetchCacheDTO getCachedDto(String pk) {
-        return aerospikeUtil.getRecord(SET_NAME, pk, ReqFetchCacheDTO.class);
-    }
-}
-
-   private ReqFetchCacheDAO cacheDAO;
+app:
+  cache:
+    ttls:
+      # Format: ${ENVIRONMENT_VARIABLE_NAME:DEFAULT_VALUE}
+      # All values are in Seconds
+      
+      # Default TTL for any general cache
+      default-expiry: ${CACHE_TTL_DEFAULT:3600}
+      
+      # Specific TTLs for Payment Flow sets
+      req-fetch: ${CACHE_TTL_REQ_FETCH:900}
+      otp-validation: ${CACHE_TTL_OTP_VALIDATION:300}
+      payment-status: ${CACHE_TTL_PAYMENT_STATUS:600}
+      user-profile: ${CACHE_TTL_USER_PROFILE:86400}
 
