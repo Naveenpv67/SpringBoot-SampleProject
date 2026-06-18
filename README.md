@@ -1,281 +1,281 @@
+By shifting this logic directly into `FlexcubeOriginatorService`, we eliminate manual decryption boilerplate in your caller classes and consolidate your payment profile lookup into a single, cohesive, transaction-scoped component.
+
+To achieve this, we will inject the **`CustIdCacheService`** (which we designed in the previous step) to cleanly resolve the decrypted plain Customer ID.
+
+Here is the updated implementation of `FlexcubeOriginatorService` including the nested `CustomerAccountDetails` record and the new unified helper method.
+
+---
+
+### Updated `FlexcubeOriginatorService`
+
+```java
 package com.payment.api.service;
 
-import com.payment.api.cache.CustIdCacheManager;
-import com.payment.api.dto.CustIdCacheDTO;
-import com.payment.api.dto.FetchCustIdRequestDTO;
-import com.payment.api.dto.FetchCustIdRespDTO;
-import com.payment.api.dto.CommonServicesResponseDTO;
-import com.payment.api.client.CsUserStatusClient;
-import com.payment.api.config.CsConfig;
+import com.payment.api.cache.DataOrchestrator;
+import com.payment.api.dto.FcOrgInfoCacheDTO;
+import com.payment.api.dto.PaymentRequest;
+import com.payment.api.dto.FlexcubeOrgInfoRequestOBPDTO;
+import com.payment.api.response.CustomerOriginatorInfoFCResponse;
+import com.payment.api.mapper.FcOrgInfoCacheMapper;
+import com.payment.api.config.ObpFcConfig;
+import com.payment.api.client.OBPDownstreamCaller;
+import com.payment.api.dao.AccountDetailsDAO;
+import com.payment.api.dto.AccountDtlsCache;
 import com.payment.api.algorithm.AESGCMEncDecAlgorithm;
 import com.payment.api.exception.CustomException;
 import com.payment.api.enums.IssuerResponseEnum;
 import com.payment.api.enums.ErrorKind;
-import com.payment.api.util.CommonUtils;
-import com.payment.api.util.SensitiveDataMasker;
-import feign.FeignException;
+import com.payment.api.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.owasp.esapi.ESAPI;
-import org.slf4j.MDC;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import javax.validation.ValidationException;
+import java.util.Optional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CustIdCacheService {
+public class FlexcubeOriginatorService {
 
-    // Using your static virtual thread executor definition
-    private static final ExecutorService VIRTUAL_THREAD_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
-
-    private final CustIdCacheManager cacheManager;
+    private final DataOrchestrator<FcOrgInfoCacheDTO> fcOrgInfoCacheManager;
+    private final ObpFcConfig obpFcConfig;
+    private final OBPDownstreamCaller obpDownstreamCaller;
+    private final FcOrgInfoCacheMapper mapper;
     private final AESGCMEncDecAlgorithm aesGCMEncDecAlgorithm;
-    private final CsUserStatusClient csUserStatusClient;
-    private final CsConfig csConfig;
+    private final AccountDetailsDAO accountDetailsDAO;
+    private final CustIdCacheService custIdCacheService; // Injected our highly optimized Customer ID cache service
 
     /**
-     * Retrieves the plain Customer ID.
-     * Uses synchronous execution for the blocking HTTP downstream call but offloads 
-     * caching and slide touch operations asynchronously via the runAsyncWithMDC helper.
+     * Public Record representing consolidated customer and account details.
      */
-    public String getPlainCustomerId(String hashCustomerId, String clientId) {
-        log.info("Resolving plain Customer ID for hash key: {} and clientId: {}", hashCustomerId, clientId);
+    public record CustomerAccountDetails(
+            String customerId, 
+            String accountNumber, 
+            String mobileNumber, 
+            String emailId, 
+            String accountType, 
+            String customerFullName
+    ) {}
 
-        // 1. Synchronous read check (Async TTL extension on hit)
-        String plainCustomerId = getPlainCustomerIdAndTouchAsync(hashCustomerId);
-        if (StringUtils.hasText(plainCustomerId)) {
-            log.info("Cache hit in Aerospike for Customer ID key: {}", hashCustomerId);
-            return plainCustomerId;
-        }
+    /**
+     * Unified Orchestrator Method.
+     * Combines the originator details API/cache flow, Customer ID decryption flow, 
+     * and dynamic account attributes to construct the plain CustomerAccountDetails DTO.
+     */
+    public CustomerAccountDetails getPlainCustomerAndAccountDetails(PaymentRequest request) {
+        log.info("Starting unified resolution of plain customer and account details for hash: {}", request.getHashAccNo());
 
-        // 2. Cache Miss: Fetch from downstream user status service (blocking network I/O)
-        log.info("Cache miss for Customer ID key: {}. Querying downstream client...", hashCustomerId);
-        plainCustomerId = fetchPlainCustIdFromDownstream(hashCustomerId, clientId);
+        // 1. Get the cached/OBP originator information
+        CustomerOriginatorInfoFCResponse fcResponse = getOriginatorInfo(request);
 
-        // 3. Async Cache Population (Using your established MDC helper)
-        if (StringUtils.hasText(plainCustomerId)) {
-            final String finalPlainCustomerId = plainCustomerId;
-            
-            runAsyncWithMDC(
-                () -> writeToCacheIfAbsent(finalPlainCustomerId, hashCustomerId),
-                MDC.getCopyOfContextMap(),
-                VIRTUAL_THREAD_EXECUTOR
+        // 2. Resolve the plain decrypted customer ID (utilizing our CustIdCacheService)
+        String plainCustId = custIdCacheService.getPlainCustomerId(request.getHashCustomerId(), request.getClientId());
+
+        // 3. Retrieve dynamic attributes (accountType, customerFullName) from the account details cache
+        String cachePK = PaymentCachePkUtil.generatePk(request.getReferenceId(), request.getHashCustomerId(), request.getClientChannel());
+        AccountDtlsCache accountDtlsCache = accountDetailsDAO.getAccountDetails(cachePK);
+
+        if (accountDtlsCache == null || accountDtlsCache.getCipherAccDtls() == null) {
+            String errorMsg = String.format("Account details not found for cache PK: %s", cachePK);
+            log.error(errorMsg);
+            throw new CustomException(
+                    IssuerResponseEnum.DATABASE_RECORD_NOT_FOUND.getErrorCodes(),
+                    "User profile not found.",
+                    errorMsg,
+                    ErrorKind.ERR_KIND_DATABASE
             );
         }
 
-        return plainCustomerId;
+        Optional<AccountDtlsCache.CipherAccountDtls> cipherAccountOpt = accountDtlsCache.getCipherAccDtls().stream()
+                .filter(accDetails -> accDetails != null && accDetails.getHashAccNo().equals(request.getHashAccNo()))
+                .findFirst();
+
+        if (cipherAccountOpt.isEmpty()) {
+            String errorMsg = String.format("Account details not found for hash: %s inside PK: %s", request.getHashAccNo(), cachePK);
+            log.error(errorMsg);
+            throw new CustomException(
+                    IssuerResponseEnum.DATABASE_RECORD_NOT_FOUND.getErrorCodes(),
+                    "Account details not found.",
+                    errorMsg,
+                    ErrorKind.ERR_KIND_DATABASE
+            );
+        }
+
+        AccountDtlsCache.CipherAccountDtls cipherAccount = cipherAccountOpt.get();
+
+        // 4. Return consolidated, plain-text details
+        return new CustomerAccountDetails(
+                plainCustId,
+                fcResponse.getAccNo(),
+                fcResponse.getMobileNo(),
+                fcResponse.getEmailId(),
+                cipherAccount.getAccType(),
+                cipherAccount.getCustFullName()
+        );
     }
 
     /**
-     * Asynchronously pre-populates the cache.
-     * Checks mapping existence and resolves missing values entirely in the background.
+     * Retrieves the Originator Information.
+     * Checks Aerospike cache first; falls back to external OBP API call and caches result on miss.
      */
-    public void cacheCustomerId(String hashCustomerId, String clientId) {
-        log.info("Offloading Customer ID caching process to virtual threads for key: {}", hashCustomerId);
-        
-        runAsyncWithMDC(() -> {
-            // Read check in background
-            CustIdCacheDTO existing = cacheManager.find(hashCustomerId);
-            if (existing != null) {
-                log.info("Mapping already exists in cache for key: {}. Skipping write.", hashCustomerId);
-                touchCacheRecord(hashCustomerId, existing);
-                return;
-            }
+    public CustomerOriginatorInfoFCResponse getOriginatorInfo(PaymentRequest paymentRequest) {
+        String accNoHash = paymentRequest.getHashAccNo();
 
-            // Fetch in background
-            String plainCustomerId = fetchPlainCustIdFromDownstream(hashCustomerId, clientId);
-            if (StringUtils.hasText(plainCustomerId)) {
-                writeToCache(plainCustomerId, hashCustomerId);
-            }
-        }, MDC.getCopyOfContextMap(), VIRTUAL_THREAD_EXECUTOR);
-    }
-
-    /**
-     * Reads plain Customer ID and schedules an asynchronous TTL extension (Touch).
-     */
-    private String getPlainCustomerIdAndTouchAsync(String hashCustomerId) {
+        // 1. Check Aerospike Cache
         try {
-            CustIdCacheDTO cachedDto = cacheManager.find(hashCustomerId);
-            if (cachedDto != null && cachedDto.getCustIdEnc() != null) {
-                // Async TTL extension so the main execution thread is unblocked
-                touchCacheRecord(hashCustomerId, cachedDto);
+            FcOrgInfoCacheDTO cachedDto = fcOrgInfoCacheManager.find(accNoHash);
+            if (cachedDto != null) {
+                log.info("Cache hit in Aerospike for account key: {}", accNoHash);
+                
+                CustomerOriginatorInfoFCResponse response = mapper.toFcResponseFromCacheDto(cachedDto);
+                enrichResponseWithDecryptedData(response, cachedDto);
+                
+                return response;
+            }
+        } catch (Exception ex) {
+            log.error("Cache read failed for key: {}. Proceeding with request flow.", accNoHash, ex);
+        }
 
-                String decryptedVal = aesGCMEncDecAlgorithm.decrypt(cachedDto.getCustIdEnc());
-                if (decryptedVal != null) {
-                    return decryptedVal.replaceAll("\"", "");
+        // 2. Resolve missing plain account number if necessary
+        log.info("Cache miss. Processing Flexcube OBP API call preparation for key (Account No hash): {}", accNoHash);
+
+        if (paymentRequest.getPlainAccNo() == null || paymentRequest.getPlainAccNo().trim().isEmpty()) {
+            log.info("Plain account number is missing in PaymentRequest. Resolving from cipher cache for key: {}", accNoHash);
+
+            String plainAccNo = getPlainAccNoFromHashAccNo(
+                    paymentRequest.getClientChannel(),
+                    paymentRequest.getReferenceId(),
+                    paymentRequest.getHashCustomerId(),
+                    accNoHash
+            );
+            paymentRequest.setPlainAccNo(plainAccNo);
+        }
+
+        // 3. Call external OBP service
+        CustomerOriginatorInfoFCResponse apiResponse =
+                callFlexcubeApiToFetchOriginatorInfo(paymentRequest);
+
+        // 4. Cache the API response on success
+        if (apiResponse != null) {
+            try {
+                if (!StringUtils.hasText(apiResponse.getAccNo())) {
+                    apiResponse.setAccNo(paymentRequest.getPlainAccNo());
                 }
-            }
-        } catch (Exception ex) {
-            log.error("Failed to read or touch Customer ID key: {}", hashCustomerId, ex);
-        }
-        return null;
-    }
 
-    /**
-     * Verifies existence before writing. Designed for background execution.
-     */
-    private void writeToCacheIfAbsent(String plainCustomerId, String hashCustomerId) {
-        try {
-            CustIdCacheDTO existing = cacheManager.find(hashCustomerId);
-            if (existing == null) {
-                writeToCache(plainCustomerId, hashCustomerId);
-            } else {
-                log.info("Mapping already established for Customer ID key: {}. Skipping write.", hashCustomerId);
-            }
-        } catch (Exception ex) {
-            log.error("Error performing write-if-absent verification for key: {}", hashCustomerId, ex);
-        }
-    }
+                FcOrgInfoCacheDTO dtoToCache = mapper.toCacheDtoFromFcResponse(apiResponse, accNoHash);
+                enrichCacheDtoWithSecureData(dtoToCache, apiResponse, paymentRequest.getPlainAccNo());
 
-    /**
-     * Writes directly to Aerospike. Designed for background execution.
-     */
-    private void writeToCache(String plainCustomerId, String hashCustomerId) {
-        try {
-            CustIdCacheDTO dto = CustIdCacheDTO.builder()
-                .pk(hashCustomerId)
-                .custIdHash(hashCustomerId)
-                .custIdEnc(aesGCMEncDecAlgorithm.encrypt(plainCustomerId))
-                .build();
-
-            cacheManager.save(dto);
-            log.info("Successfully populated Customer ID mapping in Aerospike for key: {}", hashCustomerId);
-        } catch (Exception ex) {
-            log.error("Failed to write Customer ID mapping to cache for key: {}", hashCustomerId, ex);
-        }
-    }
-
-    /**
-     * Schedules the renewal of a cache record's expiration asynchronously.
-     */
-    private void touchCacheRecord(String hashCustomerId, CustIdCacheDTO cachedDto) {
-        runAsyncWithMDC(() -> {
-            try {
-                cacheManager.save(cachedDto); 
-                log.debug("TTL renewed asynchronously for key: {}", hashCustomerId);
+                fcOrgInfoCacheManager.save(dtoToCache);
+                log.info("Successfully cached originator info in Aerospike for key: {}", accNoHash);
             } catch (Exception ex) {
-                log.warn("Could not renew TTL asynchronously for Customer ID key: {}", hashCustomerId, ex);
+                log.error("Failed to write updated originator info to cache for key: {}", accNoHash, ex);
             }
-        }, MDC.getCopyOfContextMap(), VIRTUAL_THREAD_EXECUTOR);
+        }
+
+        return apiResponse;
     }
 
-    /**
-     * Your standardized MDC-aware Asynchronous Helper Method.
-     */
-    private CompletableFuture<Void> runAsyncWithMDC(Runnable runnable, Map<String, String> context, Executor executor) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                MDC.setContextMap(context);
-                runnable.run();
-            } finally {
-                MDC.clear();
+    private void enrichResponseWithDecryptedData(CustomerOriginatorInfoFCResponse response, FcOrgInfoCacheDTO cachedDto) {
+        if (StringUtils.hasText(cachedDto.getAccNoEnc())) {
+            String decAccNo = aesGCMEncDecAlgorithm.decrypt(cachedDto.getAccNoEnc());
+            if (decAccNo != null) {
+                response.setAccNo(decAccNo.replaceAll("\"", ""));
             }
-        }, executor);
+        }
+
+        if (StringUtils.hasText(cachedDto.getMobEnc())) {
+            String decMob = aesGCMEncDecAlgorithm.decrypt(cachedDto.getMobEnc());
+            if (decMob != null) {
+                response.setMobileNo(decMob.replaceAll("\"", ""));
+            }
+        }
+
+        if (StringUtils.hasText(cachedDto.getEmailEnc())) {
+            String decEmail = aesGCMEncDecAlgorithm.decrypt(cachedDto.getEmailEnc());
+            if (decEmail != null) {
+                response.setEmailId(decEmail.replaceAll("\"", ""));
+            }
+        }
+        
+        response.setAccNoHash(cachedDto.getAccNoHash());
     }
 
-    /**
-     * Downstream Client Integration (Synchronous Network Call).
-     */
-    private String fetchPlainCustIdFromDownstream(String hashCustId, String clientId) {
+    private void enrichCacheDtoWithSecureData(FcOrgInfoCacheDTO dtoToCache, CustomerOriginatorInfoFCResponse response, String plainAccNo) {
+        String rawMobile = response.getMobileNo();
+        if (StringUtils.hasText(rawMobile)) {
+            rawMobile = rawMobile.replaceAll("\"", "");
+            if (rawMobile.length() == 10) {
+                rawMobile = "91" + rawMobile;
+            }
+        }
+
+        String rawEmail = response.getEmailId();
+
+        if (StringUtils.hasText(plainAccNo)) {
+            dtoToCache.setAccNoEnc(aesGCMEncDecAlgorithm.encrypt(plainAccNo));
+            dtoToCache.setAccNoHash(dtoToCache.getAccNoHash());
+        }
+
+        if (StringUtils.hasText(rawMobile)) {
+            dtoToCache.setMobEnc(aesGCMEncDecAlgorithm.encrypt(rawMobile));
+            dtoToCache.setMobHash(HashingUtil.generateSHA256Hash(rawMobile));
+            dtoToCache.setMobMask(MaskingUtil.maskDataFromFrontAndBack.apply(rawMobile, 3, 3));
+        }
+
+        if (StringUtils.hasText(rawEmail)) {
+            dtoToCache.setEmailEnc(aesGCMEncDecAlgorithm.encrypt(rawEmail));
+            dtoToCache.setEmailHash(HashingUtil.generateSHA256Hash(rawEmail));
+        }
+    }
+
+    private CustomerOriginatorInfoFCResponse callFlexcubeApiToFetchOriginatorInfo(PaymentRequest paymentRequest) {
         try {
-            FetchCustIdRequestDTO requestDTO = new FetchCustIdRequestDTO();
-            requestDTO.setRequestId(CommonUtils.getRandomValue());
-            requestDTO.setChannelId(csConfig.getApiEndpoints().getUserStatusService().getChannelId());
-            requestDTO.setPlatform(csConfig.getApiEndpoints().getUserStatusService().getPlatform());
-            requestDTO.setChannel(csConfig.getApiEndpoints().getUserStatusService().getChannel(clientId));
-            requestDTO.setQueryId(csConfig.getApiEndpoints().getUserStatusService().getQueryId());
-            requestDTO.setQueryValue(hashCustId);
-
-            CommonServicesResponseDTO<FetchCustIdRespDTO> response = csUserStatusClient.fetchPlainCustId(requestDTO);
-
-            if (response == null) {
-                String errorMessage = "User status service returned a null response.";
-                log.error(ESAPI.encoder().encodeForHTML(errorMessage));
-                throw new CustomException(
-                        IssuerResponseEnum.THIRD_PARTY_INVALID_RESPONSE.getErrorCodes(),
-                        "Failed to retrieve user status.",
-                        errorMessage,
-                        ErrorKind.ERR_KIND_CS
-                );
-            }
-
-            if ("200".equals(response.getStatusCode())) {
-                return processUserStatusResponse(response);
-            } else {
-                String errorMessage = String.format(
-                        "Failed call to user status service. HTTP Status: %s, Message: %s",
-                        response.getStatusCode(), response.getMessage());
-                log.error(ESAPI.encoder().encodeForHTML(errorMessage));
-                throw new CustomException(
-                        IssuerResponseEnum.THIRD_PARTY_SERVICE_ERROR.getErrorCodes(),
-                        "Failed to retrieve user status.",
-                        errorMessage,
-                        ErrorKind.ERR_KIND_CS
-                );
-            }
-        } catch (FeignException e) {
-            log.error("Feign exception occurred while calling fetchPlainCustId: {}", e.getMessage(), e);
-            throw e;
+            FlexcubeOrgInfoRequestOBPDTO transformedRequest = FlexcubeOrgInfoRequestTransformer
+                    .transformOrgInfoRequest(paymentRequest.getPlainAccNo(), obpFcConfig);
+            log.info("Calling OBP/FC To Fetch Originator Info with request: {}", CommonUtils.validateForLogForging(
+                    SensitiveDataMasker.maskSensitiveJson(CommonUtils.convertObjectToJsonString(transformedRequest))));
+            CustomerOriginatorInfoFCResponse customerOriginatorInfoFCResponse = obpDownstreamCaller
+                    .callOBPToFetchOriginatorInfo(transformedRequest, paymentRequest);
+            log.info("Received response from OBP/FC for Fetch Originator Info: {}",
+                    CommonUtils.validateForLogForging(SensitiveDataMasker.maskSensitiveJson(
+                            CommonUtils.convertObjectToJsonString(customerOriginatorInfoFCResponse))));
+            return customerOriginatorInfoFCResponse;
         } catch (Exception e) {
-            log.error("Unexpected error in fetchPlainCustIdFromDownstream: {}", e.getMessage(), e);
+            log.error("Error during Fetching Originator Info transaction", e);
             throw new CustomException(
-                    IssuerResponseEnum.THIRD_PARTY_SERVICE_ERROR.getErrorCodes(),
-                    "Failed to retrieve user status.",
-                    "An unexpected error occurred while calling user status service. Nested exception: " + ExceptionUtils.getMessage(e),
-                    ErrorKind.ERR_KIND_CS
+                    IssuerResponseEnum.INTERNAL_SERVER_ERROR.getErrorCodes(),
+                    "Failed to process transaction while Fetching Originator Info",
+                    "An error occurred while fetching originator information: " + ExceptionUtils.getMessage(e),
+                    ErrorKind.ERR_KIND_INTERNAL
             );
         }
     }
 
-    /**
-     * Decodes and validates downstream API response payload.
-     */
-    private String processUserStatusResponse(CommonServicesResponseDTO<FetchCustIdRespDTO> responseDTO) {
-        log.info("Received response from user status service: {}",
-                ESAPI.encoder().encodeForHTML(SensitiveDataMasker.maskSensitiveJson(CommonUtils.convertObjectToJsonString(responseDTO))));
+    public String getPlainAccNoFromHashAccNo(String clientChannel, String referenceId,
+                                             String hashCustomerId, String hashAccNo) {
 
-        if (responseDTO.getError() != null) {
-            String errorCode = responseDTO.getError().getCode();
-            String errorDesc = responseDTO.getError().getErrorDescription();
-            String errorMessage = "Error from user status service: " + (errorDesc != null ? errorDesc : "Unknown error");
-            log.error("User status service returned error code: {}, message: {}", errorCode, errorDesc);
-            throw new CustomException(
-                    IssuerResponseEnum.THIRD_PARTY_SERVICE_ERROR.getErrorCodes(),
-                    "Failed to retrieve user status.",
-                    errorMessage,
-                    ErrorKind.ERR_KIND_CS);
+        String accountNumber = null;
+        String cachePK = PaymentCachePkUtil.generatePk(referenceId, hashCustomerId, clientChannel);
+
+        AccountDtlsCache accountDtlsCache = accountDetailsDAO.getAccountDetails(cachePK);
+
+        if (accountDtlsCache == null || accountDtlsCache.getCipherAccDtls() == null) {
+            throw new ValidationException("Invalid Account number for the customer");
         }
+        Optional<AccountDtlsCache.CipherAccountDtls> optionalVal = accountDtlsCache.getCipherAccDtls().stream()
+                .filter(accDetails -> accDetails != null && accDetails.getHashAccNo().equals(hashAccNo))
+                .findAny();
 
-        FetchCustIdRespDTO body = responseDTO.getBody();
-        if (body == null) {
-            String errorMessage = "User status response body is null.";
-            log.error(errorMessage);
-            throw new CustomException(
-                    IssuerResponseEnum.THIRD_PARTY_INVALID_RESPONSE.getErrorCodes(), 
-                    "Failed to retrieve user status.", 
-                    errorMessage, 
-                    ErrorKind.ERR_KIND_CS);
-        }
-
-        String custId = body.getCustomerId();
-        if (StringUtils.hasText(custId)) {
-            return custId.replaceAll("\"", "");
+        if (optionalVal.isEmpty()) {
+            throw new ValidationException("Invalid Account number for the customer");
         } else {
-            String errorMessage = "Unexpected response format. Plain customer ID field is empty.";
-            log.error(errorMessage);
-            throw new CustomException(
-                    IssuerResponseEnum.THIRD_PARTY_INVALID_RESPONSE.getErrorCodes(),
-                    "Invalid response from user status service.",
-                    errorMessage,
-                    ErrorKind.ERR_KIND_CS);
+            accountNumber = aesGCMEncDecAlgorithm.decrypt(optionalVal.get().getEncrAccNo());
+            accountNumber = accountNumber.replaceAll("\"", "");
         }
+        return accountNumber;
     }
 }
+```
